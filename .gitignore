@@ -22,7 +22,7 @@ ENV/
 *.egg-info/
 build/
 dist/
-ai-parther-chat/
+ai-partner-chat/
 
 # IDE/Editor
 .vscode/
