@@ -1,0 +1,76 @@
+
+# Environment variables
+.env.local
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+env3/
+ENV/
+
+# Package directories
+*.egg/
+*.egg-info/
+build/
+dist/
+ai-parther-chat/
+
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Database and storage
+vector_db/
+memory/
+chroma.sqlite3
+
+# Temporary files
+tmp/
+temp/
+
+# Project specific
+.claude/*
+# 允许 .claude 文件夹下的 ai-partner-chat 和 langgraph-development 被跟踪
+!.claude/ai-partner-chat/
+!.claude/langgraph-development/
+# 确保子文件夹中的内容也能被跟踪
+!.claude/ai-partner-chat/**
+!.claude/langgraph-development/**
+demo/web_interface/build/
+demo/web_interface/dist/
+
+# Debug
+*.debug
+
+# Other
+.cache/
+*.pem
+.skip-template
+API.md
+cloudbaserc.json

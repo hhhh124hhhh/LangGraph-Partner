@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./web_interface/backend
+      dockerfile: Dockerfile
+    container_name: ai-partner-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - ENVIRONMENT=development
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+      - LOG_LEVEL=INFO
+    env_file:
+      - .env
+    volumes:
+      - ./demo_data:/app/demo_data
+      - ./agents:/app/agents
+      - ./utils:/app/utils
+      - ./tools:/app/tools
+      - ./config:/app/config
+      - ./vector_db:/app/vector_db
+      - ./memory:/app/memory
+    networks:
+      - ai-partner-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./web_interface/frontend
+      dockerfile: Dockerfile
+    container_name: ai-partner-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api
+      - VITE_WS_URL=ws://localhost:8000/ws
+      - VITE_APP_NAME=AI Partner
+      - VITE_DEV_MODE=true
+    depends_on:
+      - backend
+    networks:
+      - ai-partner-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: ai-partner-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - ai-partner-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+networks:
+  ai-partner-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local

@@ -1,0 +1,79 @@
+# 虚拟环境
+venv/
+env/
+env3/
+ENV/
+
+# 前端依赖
+web_interface/frontend/node_modules/
+
+# 构建输出
+web_interface/build/
+web_interface/dist/
+web_interface/frontend/dist/
+web_interface/frontend/build/
+web_interface/frontend/.next/
+web_interface/frontend/.vite/
+
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.production
+.env.*
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+tmp/
+temp/
+.cache/
+.DS_Store
+Thumbs.db
+
+# IDE/编辑器文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 数据库文件
+vector_db/
+memory/
+chroma.sqlite3
+
+# 演示数据中可能的临时数据
+demo_data/tmp/
+demo_data/generated/
+
+# Python缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 测试相关
+.pytest_cache/
+coverage.xml
+htmlcov/
+.coverage
+
+# 操作系统文件
+ehthumbs.db
+Desktop.ini
+
+# Docker相关
+docker-compose.override.yml
+.docker/
+
+# 密钥和证书
+*.pem
+*.key
+
+# 编译后的文件
+*.exe
+*.dll
+*.so
+*.dylib

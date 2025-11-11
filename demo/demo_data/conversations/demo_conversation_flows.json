@@ -1,0 +1,224 @@
+{
+  "conversation_flows": [
+    {
+      "id": "personalized_introduction",
+      "stage": "初识对话",
+      "objective": "展示个性化画像驱动的对话能力",
+      "flow_steps": [
+        {
+          "step": 1,
+          "type": "user_input",
+          "content": "你好，我想了解一下LangGraph相比其他AI框架的优势",
+          "expected_ai_response": {
+            "personalization_indicators": [
+              "识别用户技术背景",
+              "提供技术深度的回答",
+              "给出具体的代码示例"
+            ],
+            "demonstrated_features": [
+              "画像感知",
+              "技术导向回应",
+              "个性化建议"
+            ]
+          }
+        },
+        {
+          "step": 2,
+          "type": "ai_response",
+          "persona_adaptation": {
+            "user_type": "langgraph_developer",
+            "adaptation_style": "技术专家模式",
+            "response_characteristics": [
+              "详细的技术对比",
+              "具体的架构优势分析",
+              "代码示例和最佳实践"
+            ]
+          }
+        },
+        {
+          "step": 3,
+          "type": "memory_activation",
+          "memory_triggered": "用户之前提到过性能优化需求",
+          "contextual_enhancement": "结合历史对话提供更精准的建议"
+        }
+      ]
+    },
+    {
+      "id": "memory_network_demonstration",
+      "stage": "记忆关联演示",
+      "objective": "展示跨会话的智能记忆关联能力",
+      "flow_steps": [
+        {
+          "step": 1,
+          "type": "context_reference",
+          "content": "记得我上次提到的那个性能问题吗？现在遇到了新的挑战",
+          "memory_retrieval": {
+            "retrieved_contexts": [
+              "之前讨论过的性能瓶颈",
+              "用户项目的具体技术栈",
+              "之前提供的优化建议"
+            ],
+            "association_strength": "高"
+          }
+        },
+        {
+          "step": 2,
+          "type": "intelligent_response",
+          "content": "基于之前的讨论和新的挑战，我建议...",
+          "demonstrated_capabilities": [
+            "跨会话记忆关联",
+            "上下文理解",
+            "建议的连续性和递进性"
+          ]
+        },
+        {
+          "step": 3,
+          "type": "knowledge_graph_visualization",
+          "visualization_data": {
+            "nodes": [
+              {"id": "performance_issue", "type": "problem", "strength": 0.9},
+              {"id": "optimization_solution", "type": "solution", "strength": 0.8},
+              {"id": "new_challenge", "type": "problem", "strength": 0.7}
+            ],
+            "edges": [
+              {"from": "performance_issue", "to": "optimization_solution", "weight": 0.9},
+              {"from": "optimization_solution", "to": "new_challenge", "weight": 0.6}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "semantic_search_showcase",
+      "stage": "知识检索演示",
+      "objective": "展示向量化语义搜索的强大能力",
+      "flow_steps": [
+        {
+          "step": 1,
+          "type": "complex_query",
+          "content": "我在处理大规模并发用户场景时遇到了响应延迟问题",
+          "search_analysis": {
+            "query_complexity": "高（包含多个概念：并发、大规模、响应延迟）",
+            "semantic_understanding": [
+              "识别出性能优化的核心需求",
+              "理解并发场景的特殊挑战",
+              "关联到相关的技术解决方案"
+            ]
+          }
+        },
+        {
+          "step": 2,
+          "type": "search_comparison",
+          "comparison_results": {
+            "keyword_search": {
+              "results": 2,
+              "relevance_avg": 0.6,
+              "coverage": "有限"
+            },
+            "semantic_search": {
+              "results": 5,
+              "relevance_avg": 0.87,
+              "coverage": "全面，包含隐含关联"
+            },
+            "improvement_metrics": {
+              "result_count": "+150%",
+              "relevance_score": "+45%",
+              "coverage_quality": "显著提升"
+            }
+          }
+        },
+        {
+          "step": 3,
+          "type": "knowledge_application",
+          "applied_knowledge": [
+            "找到了相关的并发优化策略",
+            "发现了性能基准测试数据",
+            "获得了实用的代码优化示例"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "decision_flow_transparency",
+      "stage": "决策流程展示",
+      "objective": "展示LangGraph状态图决策的透明性和可控性",
+      "flow_steps": [
+        {
+          "step": 1,
+          "type": "multi_faceted_query",
+          "content": "我需要同时处理用户认证、数据查询和结果生成的复杂流程",
+          "decision_flow": {
+            "initial_state": "analyze_query_complexity",
+            "decision_nodes": [
+              {
+                "node": "intent_analysis",
+                "decision": "multi_task_processing",
+                "confidence": 0.92
+              },
+              {
+                "node": "task_prioritization",
+                "decision": "auth_first",
+                "reasoning": "安全性优先"
+              },
+              {
+                "node": "parallel_execution",
+                "decision": "data_query_and_result_preparation",
+                "efficiency_gain": "40%"
+              }
+            ]
+          }
+        },
+        {
+          "step": 2,
+          "type": "state_visualization",
+          "visualization_data": {
+            "state_transitions": [
+              {"from": "start", "to": "analyze_query", "time": "50ms"},
+              {"from": "analyze_query", "to": "authenticate", "time": "120ms"},
+              {"from": "authenticate", "to": "parallel_execute", "time": "80ms"},
+              {"from": "parallel_execute", "to": "generate_response", "time": "200ms"}
+            ],
+            "decision_points": [
+              {"node": "analyze_query", "type": "conditional_branch"},
+              {"node": "authenticate", "type": "validation_check"},
+              {"node": "parallel_execute", "type": "parallel_processing"}
+            ]
+          }
+        },
+        {
+          "step": 3,
+          "type": "transparency_benefits",
+          "demonstrated_advantages": [
+            "每个决策过程都清晰可见",
+            "性能瓶颈容易定位",
+            "错误处理路径可预测",
+            "系统行为可解释"
+          ]
+        }
+      ]
+    }
+  ],
+  "conversation_metrics": {
+    "engagement_indicators": {
+      "response_relevance_score": "目标 > 0.85",
+      "conversation_coherence": "目标 > 0.90",
+      "personalization_accuracy": "目标 > 0.80",
+      "user_satisfaction_rating": "目标 > 4.2/5.0"
+    },
+    "technical_metrics": {
+      "average_response_time": "目标 < 2.0s",
+      "memory_retention_accuracy": "目标 > 0.88",
+      "knowledge_retrieval_precision": "目标 > 0.85",
+      "decision_flow_transparency": "目标 100%"
+    }
+  },
+  "demo_scripts": {
+    "opening_script": "欢迎体验AI Partner智能体演示！我将向您展示从Coze到LangGraph的技术升级价值。",
+    "transition_phrases": [
+      "现在让我们看看智能记忆是如何工作的...",
+      "接下来展示我们的语义搜索能力...",
+      "让我们深入了解LangGraph的决策透明性..."
+    ],
+    "closing_script": "通过今天的演示，您看到了AI Partner在个性化、记忆管理、知识检索和决策透明性方面的显著优势。感谢您的体验！"
+  }
+}

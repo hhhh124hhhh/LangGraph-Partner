@@ -1,0 +1,117 @@
+"""
+FastAPI 应用配置
+使用 Pydantic Settings 进行配置管理
+"""
+
+from typing import List, Optional
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """应用配置类"""
+
+    # API 配置
+    api_host: str = Field(default="0.0.0.0", description="API服务器主机")
+    api_port: int = Field(default=8000, description="API服务器端口")
+    api_debug: bool = Field(default=False, description="调试模式")
+    api_reload: bool = Field(default=False, description="自动重载")
+
+    # CORS 配置
+    cors_origins: List[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        description="允许的CORS源"
+    )
+
+    # 智谱AI API 配置
+    openai_api_key: str = Field(..., description="智谱AI API密钥")
+    ai_claude_api_key: Optional[str] = Field(None, description="AI Claude API密钥")
+    openai_base_url: str = Field(
+        default="https://open.bigmodel.cn/api/paas/v4",
+        description="OpenAI API基础URL"
+    )
+
+    # 数据存储路径
+    vector_db_path: str = Field(default="./vector_db", description="向量数据库路径")
+    memory_dir: str = Field(default="./memory", description="记忆存储目录")
+    config_dir: str = Field(default="./config", description="配置文件目录")
+
+    # 模型配置
+    llm_model: str = Field(default="glm-4.6", description="LLM模型名称")
+    llm_temperature: float = Field(default=0.7, ge=0.0, le=1.0, description="LLM温度参数")
+    llm_max_tokens: int = Field(default=2000, ge=1, description="LLM最大令牌数")
+
+    # 日志配置
+    log_level: str = Field(default="INFO", description="日志级别")
+    log_format: str = Field(default="json", description="日志格式")
+
+    # 会话配置
+    default_session_timeout: int = Field(default=3600, description="默认会话超时时间（秒）")
+    max_context_turns: int = Field(default=10, ge=1, description="最大上下文轮次")
+
+    # 搜索配置
+    default_search_results: int = Field(default=5, ge=1, description="默认搜索结果数量")
+    min_similarity_score: float = Field(default=0.3, ge=0.0, le=1.0, description="最小相似度阈值")
+
+    @validator("cors_origins", pre=True)
+    def parse_cors_origins(cls, v):
+        """解析CORS源列表"""
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",")]
+        return v
+
+    @validator("log_level")
+    def validate_log_level(cls, v):
+        """验证日志级别"""
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+        if v.upper() not in valid_levels:
+            raise ValueError(f"日志级别必须是以下之一: {valid_levels}")
+        return v.upper()
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
+
+        # 字段别名映射
+        fields = {
+            "api_host": "API_HOST",
+            "api_port": "API_PORT",
+            "api_debug": "API_DEBUG",
+            "api_reload": "API_RELOAD",
+            "cors_origins": "CORS_ORIGINS",
+            "openai_api_key": "OPENAI_API_KEY",
+            "ai_claude_api_key": "AI_CLAUDE_API_KEY",
+            "openai_base_url": "OPENAI_BASE_URL",
+            "vector_db_path": "VECTOR_DB_PATH",
+            "memory_dir": "MEMORY_DIR",
+            "config_dir": "CONFIG_DIR",
+            "llm_model": "LLM_MODEL",
+            "llm_temperature": "LLM_TEMPERATURE",
+            "llm_max_tokens": "LLM_MAX_TOKENS",
+            "log_level": "LOG_LEVEL",
+            "log_format": "LOG_FORMAT",
+            "default_session_timeout": "DEFAULT_SESSION_TIMEOUT",
+            "max_context_turns": "MAX_CONTEXT_TURNS",
+            "default_search_results": "DEFAULT_SEARCH_RESULTS",
+            "min_similarity_score": "MIN_SIMILARITY_SCORE"
+        }
+
+    def get_api_url(self) -> str:
+        """获取API完整URL"""
+        return f"http://{self.api_host}:{self.api_port}"
+
+    def get_env_info(self) -> dict:
+        """获取环境信息（用于调试）"""
+        return {
+            "environment": "development" if self.api_debug else "production",
+            "api_url": self.get_api_url(),
+            "llm_model": self.llm_model,
+            "vector_db_path": self.vector_db_path,
+            "memory_dir": self.memory_dir,
+            "config_dir": self.config_dir
+        }
+
+
+# 全局配置实例
+settings = Settings()

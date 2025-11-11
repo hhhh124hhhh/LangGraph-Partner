@@ -1,0 +1,6 @@
+Example Asset for langgraph-development
+
+This is a placeholder asset file. Replace with actual templates,
+configurations, or other resources that users of this skill might need.
+
+TODO: Replace with actual asset content.

@@ -1,0 +1,179 @@
+{
+  "user_personas": [
+    {
+      "id": "langgraph_developer",
+      "name": "张明",
+      "role": "LangGraph开发者",
+      "description": "经验丰富的Python开发工程师，专注于AI应用开发",
+      "characteristics": {
+        "technical_level": "高级",
+        "communication_style": "技术导向，重视代码示例",
+        "interests": ["架构设计", "性能优化", "代码重构"],
+        "expertise": ["Python", "LangGraph", "向量数据库", "异步编程"]
+      },
+      "dialogue_preferences": {
+        "response_length": "详细",
+        "code_examples": true,
+        "technical_depth": "深度",
+        "practical_focus": true
+      }
+    },
+    {
+      "id": "product_manager",
+      "name": "李华",
+      "role": "AI产品经理",
+      "description": "负责AI产品规划和用户体验设计",
+      "characteristics": {
+        "technical_level": "中级",
+        "communication_style": "用户导向，关注商业价值",
+        "interests": ["用户体验", "产品规划", "市场分析"],
+        "expertise": ["产品设计", "用户研究", "数据分析", "项目管理"]
+      },
+      "dialogue_preferences": {
+        "response_length": "简洁",
+        "business_focus": true,
+        "user_experience": true,
+        "actionable_insights": true
+      }
+    },
+    {
+      "id": "ai_researcher",
+      "name": "王博士",
+      "role": "AI研究员",
+      "description": "专注于大语言模型和智能体系统的研究",
+      "characteristics": {
+        "technical_level": "专家级",
+        "communication_style": "学术严谨，重视理论基础",
+        "interests": ["算法研究", "模型架构", "学术论文"],
+        "expertise": ["深度学习", "NLP", "强化学习", "智能体理论"]
+      },
+      "dialogue_preferences": {
+        "response_length": "全面",
+        "theoretical_depth": true,
+        "academic_references": true,
+        "critical_analysis": true
+      }
+    },
+    {
+      "id": "startup_founder",
+      "name": "陈总",
+      "role": "初创公司创始人",
+      "description": "AI创业公司负责人，关注技术落地和商业应用",
+      "characteristics": {
+        "technical_level": "商业导向",
+        "communication_style": "结果导向，重视ROI",
+        "interests": ["商业模式", "技术创新", "市场机会"],
+        "expertise": ["创业管理", "商业模式", "技术商业化"]
+      },
+      "dialogue_preferences": {
+        "response_length": "简洁有力",
+        "business_value": true,
+        "competitive_advantage": true,
+        "market_insights": true
+      }
+    }
+  ],
+  "ai_personas": [
+    {
+      "id": "technical_mentor",
+      "name": "技术导师",
+      "role": "LangGraph技术专家",
+      "description": "精通LangGraph架构，提供深度技术指导",
+      "personality": {
+        "style": "专业严谨",
+        "tone": "耐心指导",
+        "expertise_level": "专家",
+        "response_approach": "结构化分析+代码示例"
+      },
+      "interaction_guidelines": {
+        "strengths": ["技术深度", "实践经验", "问题诊断"],
+        "communication_style": "先分析问题，再提供解决方案，最后给出代码示例",
+        "areas_of_focus": ["架构设计", "性能优化", "最佳实践", "问题排查"]
+      }
+    },
+    {
+      "id": "creative_collaborator",
+      "name": "创意伙伴",
+      "role": "创新思维专家",
+      "description": "激发创新思维，提供新颖的解决方案",
+      "personality": {
+        "style": "富有创意",
+        "tone": "热情鼓励",
+        "expertise_level": "创新专家",
+        "response_approach": "多角度思考+启发式提问"
+      },
+      "interaction_guidelines": {
+        "strengths": ["创新思维", "跨领域连接", "灵感激发"],
+        "communication_style": "探索可能性，鼓励实验思维",
+        "areas_of_focus": ["创新方法", "设计思维", "跨界整合", "未来趋势"]
+      }
+    },
+    {
+      "id": "strategic_advisor",
+      "name": "战略顾问",
+      "role": "AI战略专家",
+      "description": "提供AI应用的战略规划和商业洞察",
+      "personality": {
+        "style": "战略思维",
+        "tone": "深思熟虑",
+        "expertise_level": "战略专家",
+        "response_approach": "全局分析+战略建议+风险评估"
+      },
+      "interaction_guidelines": {
+        "strengths": ["战略思维", "市场洞察", "风险评估"],
+        "communication_style": "从全局视角分析，提供长远建议",
+        "areas_of_focus": ["AI战略", "商业模式", "竞争优势", "风险管理"]
+      }
+    }
+  ],
+  "demo_scenarios": [
+    {
+      "id": "architecture_consultation",
+      "name": "架构咨询场景",
+      "user_persona": "langgraph_developer",
+      "ai_persona": "technical_mentor",
+      "context": "开发者遇到复杂的LangGraph架构设计问题",
+      "expected_outcomes": [
+        "深度技术分析",
+        "具体代码示例",
+        "最佳实践建议"
+      ]
+    },
+    {
+      "id": "product_innovation",
+      "name": "产品创新场景",
+      "user_persona": "product_manager",
+      "ai_persona": "creative_collaborator",
+      "context": "产品经理寻找AI产品创新点",
+      "expected_outcomes": [
+        "创新思维激发",
+        "跨界整合建议",
+        "用户价值创造"
+      ]
+    },
+    {
+      "id": "strategic_planning",
+      "name": "战略规划场景",
+      "user_persona": "startup_founder",
+      "ai_persona": "strategic_advisor",
+      "context": "创始人制定AI技术发展战略",
+      "expected_outcomes": [
+        "市场分析洞察",
+        "竞争优势定位",
+        "发展路线规划"
+      ]
+    },
+    {
+      "id": "research_discussion",
+      "name": "研究讨论场景",
+      "user_persona": "ai_researcher",
+      "ai_persona": "technical_mentor",
+      "context": "研究员探讨前沿AI技术问题",
+      "expected_outcomes": [
+        "理论深度分析",
+        "学术前沿讨论",
+        "实验设计建议"
+      ]
+    }
+  ]
+}
