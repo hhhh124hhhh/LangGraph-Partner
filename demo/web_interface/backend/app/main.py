@@ -7,8 +7,10 @@ import logging
 import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
+import json
+from datetime import datetime
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
@@ -184,6 +186,10 @@ async def health_check():
         }
     }
 
+@app.get("/api/health", tags=["系统"])
+async def health_check_api():
+    return await health_check()
+
 
 # API 路由注册
 def register_routers():
@@ -221,6 +227,13 @@ def register_routers():
         tags=["演示"]
     )
 
+    from app.api.demo import router_alias as demo_alias
+    app.include_router(
+        demo_alias,
+        prefix="/api",
+        tags=["演示"]
+    )
+
     logger.info("✅ 所有API路由注册完成")
 
 
@@ -241,3 +254,35 @@ if __name__ == "__main__":
         reload=settings.api_reload,
         log_level=settings.log_level.lower()
     )
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    logger.info("🔌 WebSocket 连接已建立")
+    try:
+        while True:
+            data = await websocket.receive_text()
+            try:
+                message = json.loads(data)
+                msg_type = message.get("type")
+                if msg_type == "ping":
+                    await websocket.send_json({
+                        "type": "ping",
+                        "payload": {},
+                        "timestamp": datetime.now().isoformat()
+                    })
+                elif msg_type in ("subscribe", "unsubscribe"):
+                    await websocket.send_json({
+                        "type": "message_update",
+                        "payload": {"status": "ok"},
+                        "timestamp": datetime.now().isoformat()
+                    })
+            except Exception as e:
+                logger.error(f"WebSocket 消息处理失败: {e}")
+                await websocket.send_json({
+                    "type": "error",
+                    "payload": {"error": "invalid_message"},
+                    "timestamp": datetime.now().isoformat()
+                })
+    except WebSocketDisconnect:
+        logger.info("🔌 WebSocket 连接已关闭")

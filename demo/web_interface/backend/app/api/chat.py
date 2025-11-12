@@ -8,7 +8,7 @@ import uuid
 from typing import List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Query
 from fastapi.responses import StreamingResponse
 
 from app.models.chat import (
@@ -26,7 +26,7 @@ from app.core.security import InputValidator, rate_limit_dependency
 router = APIRouter()
 
 
-@router.post("/", response_model=ChatResponse, summary="AI对话")
+@router.post("/", summary="AI对话")
 async def chat(
     request: ChatRequest,
     background_tasks: BackgroundTasks,
@@ -43,8 +43,7 @@ async def chat(
         AI回应和相关信息
     """
     try:
-        # 验证输入
-        sanitized_message = InputValidator.sanitize_message(request.message)
+        sanitized_message = request.message.strip()
 
         # 生成会话ID（如果未提供）
         session_id = request.session_id or f"session_{uuid.uuid4().hex[:12]}"
@@ -84,15 +83,14 @@ async def chat(
             processing_time
         )
 
-        return response
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=response, message="对话成功")
 
     except ValueError as e:
         raise ValidationError(str(e))
-    except Exception as e:
-        raise AIServiceError("对话处理失败", "chat_service", {"error": str(e)})
 
 
-@router.get("/state/{session_id}", response_model=ChatState, summary="获取会话状态")
+@router.get("/state/{session_id}", summary="获取会话状态")
 async def get_chat_state(
     session_id: str,
     _: None = Depends(rate_limit_dependency)
@@ -123,7 +121,8 @@ async def get_chat_state(
             active_tools=["weather", "calculator"]
         )
 
-        return state
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=state, message="获取会话状态成功")
 
     except ValueError as e:
         raise ValidationError(str(e))
@@ -131,9 +130,12 @@ async def get_chat_state(
         raise SessionError("获取会话状态失败", validated_session_id, {"error": str(e)})
 
 
-@router.get("/history", response_model=ChatHistoryResponse, summary="获取对话历史")
+@router.get("/history", summary="获取对话历史")
 async def get_chat_history(
-    request: ChatHistoryRequest,
+    session_id: str = Query(...),
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    include_metadata: bool = Query(True),
     _: None = Depends(rate_limit_dependency)
 ):
     """
@@ -147,7 +149,7 @@ async def get_chat_history(
     """
     try:
         # 验证会话ID
-        validated_session_id = InputValidator.validate_session_id(request.session_id)
+        validated_session_id = InputValidator.validate_session_id(session_id)
 
         # TODO: 从实际的记忆管理器获取历史记录
         # 这里暂时返回模拟数据
@@ -164,18 +166,19 @@ async def get_chat_history(
                 retrieval_count=0,
                 metadata={}
             )
-            for i in range(min(request.limit, 10))
+            for i in range(min(limit, 10))
         ]
 
         response = ChatHistoryResponse(
             session_id=validated_session_id,
             total_turns=25,
             turns=mock_turns,
-            has_more=request.offset + request.limit < 25,
-            next_offset=request.offset + request.limit if request.offset + request.limit < 25 else None
+            has_more=offset + limit < 25,
+            next_offset=offset + limit if offset + limit < 25 else None
         )
 
-        return response
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=response, message="获取对话历史成功")
 
     except ValueError as e:
         raise ValidationError(str(e))
@@ -183,7 +186,7 @@ async def get_chat_history(
         raise SessionError("获取对话历史失败", request.session_id, {"error": str(e)})
 
 
-@router.post("/search", response_model=List[SearchResult], summary="语义搜索")
+@router.post("/search", summary="语义搜索")
 async def search_knowledge(
     request: SearchRequest,
     _: None = Depends(rate_limit_dependency)
@@ -224,7 +227,8 @@ async def search_knowledge(
             if result.similarity >= request.min_score
         ]
 
-        return filtered_results
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=filtered_results, message="搜索成功")
 
     except ValueError as e:
         raise ValidationError(str(e))
@@ -232,7 +236,7 @@ async def search_knowledge(
         raise AIServiceError("搜索失败", "vector_store", {"error": str(e)})
 
 
-@router.post("/tools/execute", response_model=ToolExecutionResponse, summary="执行工具")
+@router.post("/tools/execute", summary="执行工具")
 async def execute_tool(
     request: ToolExecutionRequest,
     _: None = Depends(rate_limit_dependency)
@@ -271,7 +275,8 @@ async def execute_tool(
             }
         )
 
-        return response
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=response, message="工具执行成功")
 
     except ToolExecutionError:
         raise
@@ -279,7 +284,7 @@ async def execute_tool(
         raise ToolExecutionError("工具执行失败", request.tool_name, {"error": str(e)})
 
 
-@router.delete("/sessions/{session_id}", response_model=SuccessResponse, summary="删除会话")
+@router.delete("/sessions/{session_id}", summary="删除会话")
 async def delete_session(
     session_id: str,
     _: None = Depends(rate_limit_dependency)
@@ -300,11 +305,8 @@ async def delete_session(
         # TODO: 实际的会话删除逻辑
         # 这里暂时返回成功响应
 
-        return SuccessResponse(
-            success=True,
-            message=f"会话 {validated_session_id} 已删除",
-            data={"session_id": validated_session_id}
-        )
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data={"session_id": validated_session_id}, message=f"会话 {validated_session_id} 已删除")
 
     except ValueError as e:
         raise ValidationError(str(e))
@@ -312,7 +314,7 @@ async def delete_session(
         raise SessionError("删除会话失败", validated_session_id, {"error": str(e)})
 
 
-@router.get("/sessions", response_model=PaginatedResponse, summary="获取会话列表")
+@router.get("/sessions", summary="获取会话列表")
 async def list_sessions(
     page: int = 1,
     page_size: int = 20,

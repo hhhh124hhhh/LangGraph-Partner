@@ -4,7 +4,7 @@
 """
 
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
@@ -61,7 +61,7 @@ class VectorStoreStats(BaseModel):
     embedding_model: str = Field(..., description="嵌入模型")
 
 
-@router.get("/stats", response_model=VectorStoreStats, summary="获取知识库统计")
+@router.get("/stats", summary="获取知识库统计")
 async def get_knowledge_stats(_: None = Depends(rate_limit_dependency)):
     """
     获取知识库的统计信息
@@ -81,13 +81,14 @@ async def get_knowledge_stats(_: None = Depends(rate_limit_dependency)):
             embedding_model="BAAI/bge-m3"
         )
 
-        return stats
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=stats, message="获取知识库统计成功")
 
     except Exception as e:
         raise VectorStoreError("获取知识库统计失败", "stats", {"error": str(e)})
 
 
-@router.post("/search", response_model=List[SearchResult], summary="语义搜索")
+@router.post("/search", summary="语义搜索")
 async def search_knowledge(
     request: KnowledgeSearchRequest,
     _: None = Depends(rate_limit_dependency)
@@ -132,7 +133,8 @@ async def search_knowledge(
             if result.similarity >= request.min_score
         ]
 
-        return filtered_results
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=filtered_results, message="搜索成功")
 
     except ValueError as e:
         raise ValidationError(str(e))
@@ -200,7 +202,7 @@ async def list_documents(
         raise VectorStoreError("获取文档列表失败", "list_documents", {"error": str(e)})
 
 
-@router.get("/documents/{doc_id}", response_model=KnowledgeDocument, summary="获取文档详情")
+@router.get("/documents/{doc_id}", summary="获取文档详情")
 async def get_document(
     doc_id: str,
     _: None = Depends(rate_limit_dependency)
@@ -235,7 +237,8 @@ async def get_document(
             }
         )
 
-        return document
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=document, message="获取文档详情成功")
 
     except Exception as e:
         raise NotFoundError("文档", doc_id)
@@ -425,7 +428,7 @@ async def find_similar_documents(
         raise VectorStoreError("查找相似文档失败", "find_similar", {"error": str(e)})
 
 
-@router.get("/tags", response_model=Dict[str, Any], summary="获取标签统计")
+@router.get("/tags", summary="获取标签统计")
 async def get_tag_stats(_: None = Depends(rate_limit_dependency)):
     """
     获取知识库标签统计信息
@@ -455,7 +458,8 @@ async def get_tag_stats(_: None = Depends(rate_limit_dependency)):
             "recent_tags": ["LangGraph", "向量数据库", "RAG", "AI助手", "FastAPI"]
         }
 
-        return tag_stats
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=tag_stats, message="获取标签统计成功")
 
     except Exception as e:
         raise VectorStoreError("获取标签统计失败", "tag_stats", {"error": str(e)})

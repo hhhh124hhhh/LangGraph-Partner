@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.models.response import SuccessResponse, PaginatedResponse
@@ -59,7 +60,7 @@ class SessionSummary(BaseModel):
     is_active: bool = Field(default=True, description="是否活跃")
 
 
-@router.get("/stats", response_model=MemoryStats, summary="获取记忆统计")
+@router.get("/stats", summary="获取记忆统计")
 async def get_memory_stats(_: None = Depends(rate_limit_dependency)):
     """
     获取记忆系统的统计信息
@@ -80,7 +81,8 @@ async def get_memory_stats(_: None = Depends(rate_limit_dependency)):
             newest_session=datetime.now().isoformat()
         )
 
-        return stats
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=stats, message="获取记忆统计成功")
 
     except Exception as e:
         raise MemoryError("获取记忆统计失败", "stats", {"error": str(e)})
@@ -196,7 +198,7 @@ async def get_session_turns(
         raise MemoryError("获取会话对话失败", "get_session_turns", {"error": str(e)})
 
 
-@router.post("/search", response_model=List[Dict[str, Any]], summary="搜索记忆")
+@router.post("/search", summary="搜索记忆")
 async def search_memory(
     request: MemorySearchRequest,
     _: None = Depends(rate_limit_dependency)
@@ -236,7 +238,8 @@ async def search_memory(
             for i in range(min(request.limit, 10))
         ]
 
-        return mock_results
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=mock_results, message="搜索记忆成功")
 
     except ValueError as e:
         raise ValidationError(str(e))
@@ -321,7 +324,7 @@ async def cleanup_old_memory(
         raise MemoryError("清理记忆失败", "cleanup", {"error": str(e)})
 
 
-@router.get("/network", response_model=Dict[str, Any], summary="获取记忆网络")
+@router.get("/network", summary="获取记忆网络")
 async def get_memory_network(
     session_id: Optional[str] = Query(None, description="会话ID"),
     depth: int = Query(default=3, ge=1, le=5, description="网络深度"),
@@ -394,7 +397,8 @@ async def get_memory_network(
             }
         }
 
-        return network_data
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=network_data, message="获取记忆网络成功")
 
     except ValueError as e:
         raise ValidationError(str(e))
@@ -438,7 +442,7 @@ async def export_memory(
                 "session_id": validated_session_id,
                 "format": format,
                 "include_metadata": include_metadata,
-                "file_size": 1024 * 100,  # 100KB
+                "file_size": 1024 * 100,
                 "download_url": f"/api/memory/download/{export_id}",
                 "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
             }
@@ -448,3 +452,14 @@ async def export_memory(
         raise ValidationError(str(e))
     except Exception as e:
         raise MemoryError("导出记忆数据失败", "export", {"error": str(e)})
+@router.get("/network/{session_id}", response_model=Dict[str, Any], summary="获取记忆网络别名")
+async def get_memory_network_by_path(
+    session_id: str,
+    depth: int = Query(default=3, ge=1, le=5, description="网络深度"),
+    _: None = Depends(rate_limit_dependency)
+):
+    return await get_memory_network(session_id=session_id, depth=depth)
+@router.get("/download/{export_id}", summary="下载导出文件")
+async def download_memory_export(export_id: str):
+    content = (f"export:{export_id}\n").encode("utf-8")
+    return StreamingResponse(iter([content]), media_type="application/octet-stream")

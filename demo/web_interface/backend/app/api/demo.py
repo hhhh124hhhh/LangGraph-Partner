@@ -15,6 +15,7 @@ from app.core.exceptions import ValidationError, NotFoundError
 from app.core.security import rate_limit_dependency
 
 router = APIRouter()
+router_alias = APIRouter()
 
 
 class DemoScenario(BaseModel):
@@ -53,7 +54,7 @@ class ComparisonResult(BaseModel):
     overall_score: float = Field(..., description="总体评分")
 
 
-@router.get("/scenarios", response_model=List[DemoScenario], summary="获取演示场景")
+@router.get("/scenarios", summary="获取演示场景")
 async def get_demo_scenarios(
     category: Optional[str] = Query(None, description="场景分类过滤"),
     difficulty: Optional[str] = Query(None, description="难度过滤"),
@@ -176,13 +177,14 @@ async def get_demo_scenarios(
         if difficulty:
             scenarios = [s for s in scenarios if s.difficulty == difficulty]
 
-        return scenarios
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=scenarios, message="获取演示场景成功")
 
     except Exception as e:
         raise ValidationError("获取演示场景失败", {"error": str(e)})
 
 
-@router.get("/scenarios/{scenario_id}", response_model=DemoScenario, summary="获取场景详情")
+@router.get("/scenarios/{scenario_id}", summary="获取场景详情")
 async def get_scenario_detail(
     scenario_id: str,
     _: None = Depends(rate_limit_dependency)
@@ -251,7 +253,8 @@ class AgentState(BaseModel):
         else:
             raise NotFoundError("演示场景", scenario_id)
 
-        return scenario
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=scenario, message="获取场景详情成功")
 
     except NotFoundError:
         raise
@@ -259,7 +262,7 @@ class AgentState(BaseModel):
         raise ValidationError("获取场景详情失败", {"error": str(e)})
 
 
-@router.post("/comparison/analyze", response_model=ComparisonResult, summary="对比分析")
+@router.post("/comparison/analyze", summary="对比分析")
 async def analyze_comparison(
     request: ComparisonRequest,
     _: None = Depends(rate_limit_dependency)
@@ -320,7 +323,8 @@ async def analyze_comparison(
             overall_score=0.87
         )
 
-        return result
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=result, message="对比分析成功")
 
     except ValidationError:
         raise
@@ -481,7 +485,7 @@ async def get_demo_samples(
         raise ValidationError("获取示例数据失败", {"error": str(e)})
 
 
-@router.post("/run/{scenario_id}", response_model=SuccessResponse, summary="运行演示")
+@router.post("/run/{scenario_id}", summary="运行演示")
 async def run_demo_scenario(
     scenario_id: str,
     params: Optional[Dict[str, Any]] = None,
@@ -546,17 +550,15 @@ async def run_demo_scenario(
                 "learned_concepts": []
             }
 
-        return SuccessResponse(
-            success=True,
-            message=f"演示场景 {scenario_id} 运行完成",
-            data={
-                "run_id": run_id,
-                "scenario_id": scenario_id,
-                "params": params or {},
-                "result": result,
-                "completed_at": datetime.now().isoformat()
-            }
-        )
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data={
+            "run_id": run_id,
+            "scenario_id": scenario_id,
+            "params": params or {},
+            "result": result,
+            "completed_at": datetime.now().isoformat(),
+            "success": True
+        }, message="运行演示成功")
 
     except Exception as e:
         raise ValidationError("运行演示场景失败", {"error": str(e)})
@@ -620,3 +622,6 @@ Contents:
 
     except Exception as e:
         raise ValidationError("导出演示包失败", {"error": str(e)})
+@router_alias.post("/comparison/analyze")
+async def analyze_comparison_alias(request: ComparisonRequest, _: None = Depends(rate_limit_dependency)):
+    return await analyze_comparison(request, _)

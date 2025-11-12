@@ -57,10 +57,12 @@ class TestChatAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "response" in data
-        assert "session_id" in data
-        assert "processing_time" in data
-        assert data["response"] is not None
+        assert data["success"] is True
+        assert "data" in data
+        assert "response" in data["data"]
+        assert "session_id" in data["data"]
+        assert "processing_time" in data["data"]
+        assert data["data"]["response"] is not None
 
     def test_chat_empty_message(self):
         """测试空消息"""
@@ -97,9 +99,11 @@ class TestChatAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "session_id" in data
-        assert "current_turn" in data
-        assert data["session_id"] == "test_session_123"
+        assert data["success"] is True
+        assert "data" in data
+        assert "session_id" in data["data"]
+        assert "current_turn" in data["data"]
+        assert data["data"]["session_id"] == "test_session_123"
 
     def test_chat_search(self):
         """测试知识搜索功能"""
@@ -113,7 +117,8 @@ class TestChatAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert isinstance(data, list)
+        assert data["success"] is True
+        assert isinstance(data["data"], list)
 
     def test_chat_tool_execution(self):
         """测试工具执行功能"""
@@ -128,10 +133,12 @@ class TestChatAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "tool_name" in data
-        assert "success" in data
-        assert "result" in data
-        assert data["tool_name"] == "calculator"
+        assert data["success"] is True
+        assert "data" in data
+        assert "tool_name" in data["data"]
+        assert "success" in data["data"]
+        assert "result" in data["data"]
+        assert data["data"]["tool_name"] == "calculator"
 
 
 class TestPersonaAPI:
@@ -143,9 +150,11 @@ class TestPersonaAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "user_persona" in data
-        assert "ai_persona" in data
-        assert "compatibility_score" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "user_persona" in data["data"]
+        assert "ai_persona" in data["data"]
+        assert "compatibility_score" in data["data"]
 
     def test_update_persona(self):
         """测试更新画像"""
@@ -163,9 +172,9 @@ class TestPersonaAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "success" in data
-        assert "persona_info" in data
         assert data["success"] is True
+        assert "data" in data
+        assert "persona_info" in data["data"]
 
     def test_get_user_persona(self):
         """测试获取用户画像"""
@@ -191,9 +200,11 @@ class TestPersonaAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "user_persona_summary" in data
-        assert "ai_persona_summary" in data
-        assert "interaction_patterns" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "user_persona_summary" in data["data"]
+        assert "ai_persona_summary" in data["data"]
+        assert "interaction_patterns" in data["data"]
 
     def test_persona_validation(self):
         """测试画像验证"""
@@ -211,8 +222,10 @@ class TestPersonaAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "is_valid" in data
-        assert "completeness_score" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "is_valid" in data["data"]
+        assert "completeness_score" in data["data"]
 
 
 class TestMemoryAPI:
@@ -224,9 +237,11 @@ class TestMemoryAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "total_sessions" in data
-        assert "total_turns" in data
-        assert "memory_usage_mb" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "total_sessions" in data["data"]
+        assert "total_turns" in data["data"]
+        assert "memory_usage_mb" in data["data"]
 
     def test_list_sessions(self):
         """测试获取会话列表"""
@@ -249,7 +264,8 @@ class TestMemoryAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert isinstance(data, list)
+        assert data["success"] is True
+        assert isinstance(data["data"], list)
 
     def test_get_memory_network(self):
         """测试获取记忆网络"""
@@ -257,9 +273,11 @@ class TestMemoryAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "nodes" in data
-        assert "edges" in data
-        assert "metadata" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "nodes" in data["data"]
+        assert "edges" in data["data"]
+        assert "metadata" in data["data"]
 
 
 class TestKnowledgeAPI:
@@ -271,9 +289,11 @@ class TestKnowledgeAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "total_documents" in data
-        assert "total_chunks" in data
-        assert "embedding_model" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "total_documents" in data["data"]
+        assert "total_chunks" in data["data"]
+        assert "embedding_model" in data["data"]
 
     def test_search_knowledge(self):
         """测试知识搜索"""
@@ -288,7 +308,8 @@ class TestKnowledgeAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert isinstance(data, list)
+        assert data["success"] is True
+        assert isinstance(data["data"], list)
 
     def test_list_documents(self):
         """测试获取文档列表"""
@@ -305,8 +326,10 @@ class TestKnowledgeAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "total_tags" in data
-        assert "most_used_tags" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "total_tags" in data["data"]
+        assert "most_used_tags" in data["data"]
 
 
 class TestDemoAPI:
@@ -318,8 +341,9 @@ class TestDemoAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert isinstance(data, list)
-        assert len(data) > 0
+        assert data["success"] is True
+        assert isinstance(data["data"], list)
+        assert len(data["data"]) > 0
 
     def test_get_scenario_detail(self):
         """测试获取场景详情"""
@@ -327,9 +351,11 @@ class TestDemoAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "scenario_id" in data
-        assert "name" in data
-        assert "steps" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "scenario_id" in data["data"]
+        assert "name" in data["data"]
+        assert "steps" in data["data"]
 
     def test_run_demo_scenario(self):
         """测试运行演示场景"""
@@ -341,9 +367,10 @@ class TestDemoAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "success" in data
-        assert "run_id" in data
-        assert "result" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "run_id" in data["data"]
+        assert "result" in data["data"]
 
     def test_get_demo_templates(self):
         """测试获取演示模板"""
@@ -382,9 +409,11 @@ class TestDemoAPI:
         assert response.status_code == 200
 
         data = response.json()
-        assert "comparison_id" in data
-        assert "differences" in data
-        assert "overall_score" in data
+        assert data["success"] is True
+        assert "data" in data
+        assert "comparison_id" in data["data"]
+        assert "differences" in data["data"]
+        assert "overall_score" in data["data"]
 
 
 class TestErrorHandling:

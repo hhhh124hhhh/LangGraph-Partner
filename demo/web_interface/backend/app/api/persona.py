@@ -6,7 +6,7 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import PlainTextResponse, StreamingResponse
 
 from app.models.persona import (
@@ -21,7 +21,7 @@ from app.core.security import InputValidator, rate_limit_dependency
 router = APIRouter()
 
 
-@router.get("/context", response_model=PersonaContext, summary="获取画像上下文")
+@router.get("/context", summary="获取画像上下文")
 async def get_persona_context(_: None = Depends(rate_limit_dependency)):
     """
     获取当前用户和AI的画像上下文信息
@@ -64,13 +64,14 @@ async def get_persona_context(_: None = Depends(rate_limit_dependency)):
             compatibility_score=0.85
         )
 
-        return context
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=context, message="获取画像上下文成功")
 
     except Exception as e:
         raise ValidationError("获取画像上下文失败", {"error": str(e)})
 
 
-@router.post("/update", response_model=PersonaResponse, summary="更新画像")
+@router.post("/update", summary="更新画像")
 async def update_persona(
     request: PersonaUpdateRequest,
     _: None = Depends(rate_limit_dependency)
@@ -111,7 +112,8 @@ async def update_persona(
             updated_fields=list(validated_attributes.keys())
         )
 
-        return response
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=response, message="画像更新成功")
 
     except ValidationError:
         raise
@@ -119,7 +121,7 @@ async def update_persona(
         raise ValidationError("画像更新失败", {"error": str(e)})
 
 
-@router.get("/user", response_model=Dict[str, Any], summary="获取用户画像")
+@router.get("/user", summary="获取用户画像")
 async def get_user_persona(
     force_reload: bool = False,
     _: None = Depends(rate_limit_dependency)
@@ -153,17 +155,14 @@ async def get_user_persona(
             "updated_at": datetime.now().isoformat()
         }
 
-        return SuccessResponse(
-            success=True,
-            message="获取用户画像成功",
-            data=user_persona
-        )
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=user_persona, message="获取用户画像成功")
 
     except Exception as e:
         raise ValidationError("获取用户画像失败", {"error": str(e)})
 
 
-@router.get("/ai", response_model=Dict[str, Any], summary="获取AI画像")
+@router.get("/ai", summary="获取AI画像")
 async def get_ai_persona(
     force_reload: bool = False,
     _: None = Depends(rate_limit_dependency)
@@ -198,17 +197,14 @@ async def get_ai_persona(
             "updated_at": datetime.now().isoformat()
         }
 
-        return SuccessResponse(
-            success=True,
-            message="获取AI画像成功",
-            data=ai_persona
-        )
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=ai_persona, message="获取AI画像成功")
 
     except Exception as e:
         raise ValidationError("获取AI画像失败", {"error": str(e)})
 
 
-@router.get("/analysis", response_model=PersonaAnalysis, summary="画像分析")
+@router.get("/analysis", summary="画像分析")
 async def analyze_persona(_: None = Depends(rate_limit_dependency)):
     """
     分析当前画像的兼容性和交互模式
@@ -244,59 +240,13 @@ async def analyze_persona(_: None = Depends(rate_limit_dependency)):
             analysis_timestamp=datetime.now()
         )
 
-        return analysis
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=analysis, message="画像分析成功")
 
     except Exception as e:
         raise ValidationError("画像分析失败", {"error": str(e)})
 
 
-@router.post("/validate", response_model=PersonaValidationResult, summary="验证画像")
-async def validate_persona(
-    persona_type: str,
-    persona_data: Dict[str, Any],
-    _: None = Depends(rate_limit_dependency)
-):
-    """
-    验证画像数据的完整性和一致性
-
-    Args:
-        persona_type: 画像类型 (user/ai)
-        persona_data: 画像数据
-
-    Returns:
-        验证结果
-    """
-    try:
-        if persona_type not in ["user", "ai"]:
-            raise ValidationError("画像类型必须是 user 或 ai")
-
-        # 验证画像数据
-        validated_data = InputValidator.validate_persona_data(persona_data)
-
-        # TODO: 实际的画像验证逻辑
-        # 这里暂时返回模拟验证结果
-        validation_result = PersonaValidationResult(
-            is_valid=True,
-            validation_errors=[],
-            validation_warnings=[
-                "建议添加更多专业领域信息",
-                "可以考虑添加工作偏好设置"
-            ],
-            completeness_score=0.8,
-            consistency_score=0.9,
-            recommendations=[
-                "补充技术栈详情",
-                "添加项目经验信息",
-                "完善沟通风格描述"
-            ]
-        )
-
-        return validation_result
-
-    except ValidationError:
-        raise
-    except Exception as e:
-        raise ValidationError("画像验证失败", {"error": str(e)})
 
 
 @router.get("/templates", response_model=List[PersonaTemplate], summary="获取画像模板")
@@ -436,3 +386,26 @@ communication_style: {mock_persona.communication_style}
         raise
     except Exception as e:
         raise ValidationError("画像导出失败", {"error": str(e)})
+@router.post("/validate", summary="画像验证")
+async def validate_persona(
+    persona_type: str = Query(...),
+    request: dict = None,
+    _: None = Depends(rate_limit_dependency)
+):
+    try:
+        required_fields = ["name", "role"]
+        completeness = 0
+        for f in required_fields:
+            if request and request.get(f):
+                completeness += 1
+        score = completeness / len(required_fields)
+        result = PersonaValidationResult(
+            is_valid=score >= 0.5,
+            completeness_score=score,
+            missing_fields=[f for f in required_fields if not (request and request.get(f))],
+            warnings=[]
+        )
+        from app.models.response import ResponseBuilder
+        return ResponseBuilder.success(data=result, message="画像验证成功")
+    except Exception as e:
+        raise ValidationError("画像验证失败", {"error": str(e)})
