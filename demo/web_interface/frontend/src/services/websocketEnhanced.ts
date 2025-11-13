@@ -231,13 +231,17 @@ class EnhancedWebSocketService {
 
   private handleMessage(message: WebSocketMessage): void {
     // 减少日志输出，只对重要消息记录
-    if (message.type !== 'ping') {
+    if (message.type !== 'ping' && message.type !== 'pong') {
       console.log('[WebSocket] Received:', message.type);
     }
 
     switch (message.type) {
       case 'ping':
         this.handlePing();
+        break;
+      case 'pong':
+        // 处理pong响应，用于心跳检测
+        this.handlePong();
         break;
       case 'message':
       case 'message_response':
@@ -254,6 +258,11 @@ class EnhancedWebSocketService {
 
   private handlePing(): void {
     this.send({ type: 'pong', payload: {} });
+  }
+
+  private handlePong(): void {
+    // 收到pong响应，更新连接质量指标
+    connectionManager.onPongReceived();
   }
 
   private emit(message: WebSocketMessage): void {
@@ -335,13 +344,18 @@ class EnhancedWebSocketService {
   }
 
   private getWebSocketUrl(): string {
+    // 如果环境变量中有完整的WebSocket URL，直接使用
+    if (import.meta.env.VITE_WS_URL) {
+      const wsUrl = import.meta.env.VITE_WS_URL;
+      console.log('[WebSocket] Connecting to (from env):', wsUrl);
+      return wsUrl;
+    }
+    
+    // 否则根据当前页面协议和默认地址构建
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // 修复：明确使用后端服务器地址，而不是当前页面地址
-    const host = import.meta.env.VITE_WS_URL ?
-      new URL(import.meta.env.VITE_WS_URL).host :
-      'localhost:8000';
+    const host = 'localhost:8000';
     const wsUrl = `${protocol}//${host}/ws`;
-    console.log('[WebSocket] Connecting to:', wsUrl);
+    console.log('[WebSocket] Connecting to (default):', wsUrl);
     return wsUrl;
   }
 

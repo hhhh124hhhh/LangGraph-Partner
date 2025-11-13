@@ -161,6 +161,15 @@ class ConnectionManager {
     this.setState(ConnectionState.RECONNECTING);
   }
 
+  // 收到pong响应
+  onPongReceived(): void {
+    // 更新连接质量，表示心跳正常
+    if (this.state === ConnectionState.CONNECTED) {
+      // 可以在这里添加心跳延迟统计
+      console.debug('[ConnectionManager] Pong received, connection healthy');
+    }
+  }
+
   // 开始健康检查
   private startHealthCheck(): void {
     this.stopHealthCheck();
