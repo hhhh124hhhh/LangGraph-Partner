@@ -9,7 +9,7 @@ import {
   ComparisonRequest,
   ComparisonResponse,
   PersonaUpdateRequest,
-} from '@types/index';
+} from '@typesdef/index';
 
 // 查询键工厂
 export const queryKeys = {

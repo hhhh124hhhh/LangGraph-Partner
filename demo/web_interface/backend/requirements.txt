@@ -24,7 +24,7 @@ passlib[bcrypt]==1.7.4
 
 # 现有项目依赖（确保版本兼容）
 langchain==0.1.0
-langchain-core==0.1.7
+langchain-core==0.1.16
 langchain-openai==0.0.5
 langgraph==0.0.21
 
@@ -33,7 +33,7 @@ chromadb==0.4.18
 sentence-transformers==2.2.2
 
 # AI 模型支持
-openai==1.6.1
+openai==1.10.0
 sentencepiece==0.1.99
 protobuf==4.25.1
 

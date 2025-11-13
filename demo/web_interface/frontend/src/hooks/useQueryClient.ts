@@ -6,8 +6,6 @@ const queryConfig: QueryClientConfig = {
     queries: {
       // 5分钟缓存时间
       staleTime: 5 * 60 * 1000,
-      // 10分钟垃圾回收时间
-      gcTime: 10 * 60 * 1000,
       // 重试配置
       retry: (failureCount, error) => {
         // 4xx 错误不重试
@@ -32,11 +30,6 @@ const queryConfig: QueryClientConfig = {
       retry: 1,
       retryDelay: 1000,
     },
-  },
-  // 错误边界配置
-  errorHandler: (error) => {
-    console.error('[Query] Error:', error);
-    // 这里可以集成错误报告服务
   },
 };
 

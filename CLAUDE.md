@@ -141,11 +141,59 @@ ZHIPU_API_KEY="your_api_key"
 - 使用状态图的调试模式检查流程
 - 验证环境变量配置是否正确
 
+### Bash路径操作最佳实践
+
+**问题**：在Windows环境下，bash命令的工作目录不稳定，容易出现路径错误。
+
+**解决方案**：
+
+#### 1. 使用完整绝对路径（推荐）
+```bash
+# ✅ 正确方式：使用完整绝对路径
+ls -la "/f/person/3-数字化集锦/LangGraph/demo/web_interface/frontend/src/pages/SettingsPage.tsx"
+grep -n "password" "/f/person/3-数字化集锦/LangGraph/demo/web_interface/frontend/src/pages/SettingsPage.tsx"
+
+# ❌ 错误方式：容易出错的相对路径操作
+cd /path/to/file
+ls SettingsPage.tsx
+```
+
+#### 2. 确保工作目录一致性
+```bash
+# ✅ 先确认切换到正确目录，然后使用相对路径
+cd "/f/person/3-数字化集锦/LangGraph/demo/web_interface/frontend/src/pages"
+pwd  # 确认当前目录
+ls -la SettingsPage.tsx
+grep -n "password" SettingsPage.tsx
+```
+
+#### 3. 路径操作规范
+- **使用双引号包围路径**：处理包含空格的路径
+- **优先使用完整路径**：避免工作目录依赖
+- **验证路径存在**：使用 `ls` 或 `pwd` 确认路径正确
+- **Windows路径格式**：使用 `/f/person/...` 格式而不是 `F:\person\...`
+
+#### 4. 实际应用示例
+```bash
+# 查看前端设置页面
+cd "/f/person/3-数字化集锦/LangGraph/demo/web_interface/frontend/src/pages"
+grep -n "password\|接口与基础配置\|模型设置" SettingsPage.tsx
+
+# 修改后端配置
+cd "/f/person/3-数字化集锦/LangGraph/demo/web_interface/backend"
+python -m uvicorn app.main:app --reload
+
+# 前端开发服务器
+cd "/f/person/3-数字化集锦/LangGraph/demo/web_interface/frontend"
+npm run dev
+```
+
 ### 常见问题排查
 1. **API连接失败**: 检查 `.env.local` 中的API密钥和URL
 2. **向量检索问题**: 重新运行 `scripts/chunk_and_index.py`
 3. **记忆功能异常**: 检查 `memory/` 目录权限
 4. **依赖包问题**: 确保使用虚拟环境并正确安装依赖
+5. **路径错误**: 使用完整绝对路径，避免工作目录依赖问题
 
 ## 测试和验证
 

@@ -452,7 +452,7 @@ async def export_memory(
         raise ValidationError(str(e))
     except Exception as e:
         raise MemoryError("导出记忆数据失败", "export", {"error": str(e)})
-@router.get("/network/{session_id}", response_model=Dict[str, Any], summary="获取记忆网络别名")
+@router.get("/network/{session_id}", summary="获取记忆网络别名")
 async def get_memory_network_by_path(
     session_id: str,
     depth: int = Query(default=3, ge=1, le=5, description="网络深度"),

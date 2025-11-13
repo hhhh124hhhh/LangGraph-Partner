@@ -13,10 +13,33 @@ from pathlib import Path
 
 def setup_environment():
     """设置环境变量"""
-    # 检查.env文件是否存在
-    env_file = Path(".env")
-    if not env_file.exists():
-        print("ERROR: .env文件不存在，请从.env.example复制并配置")
+    # 尝试从多个位置加载.env文件
+    env_paths = [
+        Path(".env"),  # 当前目录
+        Path("../../.env"),  # 根目录
+        Path("../.env")  # demo目录
+    ]
+    
+    env_file_found = False
+    for env_path in env_paths:
+        if env_path.exists():
+            print(f"📄 加载环境变量文件: {env_path.absolute()}")
+            # 使用dotenv加载环境变量
+            try:
+                from dotenv import load_dotenv
+                load_dotenv(dotenv_path=env_path)
+                env_file_found = True
+                break
+            except ImportError:
+                print("⚠️ dotenv模块未安装，正在安装...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "python-dotenv"])
+                from dotenv import load_dotenv
+                load_dotenv(dotenv_path=env_path)
+                env_file_found = True
+                break
+    
+    if not env_file_found:
+        print("ERROR: 未找到.env文件，请在根目录或backend目录创建")
         return False
 
     # 检查必要的环境变量

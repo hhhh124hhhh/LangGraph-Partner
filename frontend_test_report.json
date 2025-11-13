@@ -1,0 +1,42 @@
+{
+  "timestamp": "2024-07-22 12:30:00",
+  "page_url": "http://localhost:3000/home",
+  "test_results": {
+    "passed": true,
+    "checks": [
+      {
+        "name": "DOM节点存在性",
+        "status": "passed",
+        "details": "核心DOM节点已加载：导航栏、功能展示区、平台数据、技术亮点"
+      },
+      {
+        "name": "LCP性能指标",
+        "status": "passed",
+        "details": "LCP为316ms，低于2.5s的标准"
+      },
+      {
+        "name": "CLS性能指标",
+        "status": "passed",
+        "details": "CLS为0.00，页面稳定性良好"
+      }
+    ]
+  },
+  "performance_metrics": {
+    "LCP": 316,
+    "CLS": 0.00,
+    "LCP_render_delay": 290
+  },
+  "console_logs": {
+    "count": 8,
+    "samples": ["WebSocket连接失败", "404错误", "后续成功连接"],
+    "has_errors": true
+  },
+  "network_requests": {
+    "count": 0,
+    "type": "xhr/fetch"
+  },
+  "optimization_suggestions": [
+    "优化LCP渲染延迟：目前渲染延迟290ms，可通过减少渲染阻塞资源和优化关键路径来改善",
+    "修复WebSocket连接问题：控制台显示初期连接失败，建议检查连接配置和重连机制"
+  ]
+}

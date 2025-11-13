@@ -295,6 +295,7 @@ export interface Notification {
   message: string;
   timestamp: string;
   read: boolean;
+  duration?: number;
   actions?: NotificationAction[];
 }
 
@@ -306,7 +307,7 @@ export interface NotificationAction {
 
 // 实时更新相关
 export interface WebSocketMessage {
-  type: 'state_update' | 'message_update' | 'memory_update' | 'error' | 'ping';
+  type: 'state_update' | 'message_update' | 'memory_update' | 'error' | 'ping' | 'connection_error' | 'connection_opened' | 'connection_closed' | 'connection_quality_update';
   payload: any;
   timestamp: string;
   session_id?: string;

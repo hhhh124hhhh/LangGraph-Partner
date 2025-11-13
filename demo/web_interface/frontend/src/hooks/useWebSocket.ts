@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { webSocketService, WebSocketMessage } from '@services/index';
+import { webSocketManager } from '@services/websocketManager';
 import { useAppStore } from '@stores/index';
 
 export const useWebSocket = (autoConnect = true) => {
@@ -10,13 +10,13 @@ export const useWebSocket = (autoConnect = true) => {
     setGlobalLoading
   } = useAppStore();
 
-  const handlersRef = useRef<Map<string, (message: WebSocketMessage) => void>>(new Map());
+  const handlersRef = useRef<Map<string, (message: any) => void>>(new Map());
 
   // 连接WebSocket
   const connect = useCallback(async () => {
     try {
       setGlobalLoading(true);
-      await webSocketService.connect();
+      await webSocketManager.connect();
       addNotification({
         type: 'success',
         title: '连接成功',
@@ -36,7 +36,7 @@ export const useWebSocket = (autoConnect = true) => {
 
   // 断开连接
   const disconnect = useCallback(() => {
-    webSocketService.disconnect();
+    webSocketManager.disconnect();
     addNotification({
       type: 'info',
       title: '连接断开',
@@ -45,25 +45,25 @@ export const useWebSocket = (autoConnect = true) => {
   }, [addNotification]);
 
   // 发送消息
-  const send = useCallback((message: Omit<WebSocketMessage, 'timestamp'>) => {
-    webSocketService.send(message);
+  const send = useCallback((message: any) => {
+    webSocketManager.send(message);
   }, []);
 
   // 注册事件处理器
-  const on = useCallback((eventType: string, handler: (message: WebSocketMessage) => void) => {
+  const on = useCallback((eventType: string, handler: (message: any) => void) => {
     handlersRef.current.set(eventType, handler);
-    return webSocketService.on(eventType, handler);
+    return webSocketManager.on(eventType, handler);
   }, []);
 
   // 移除事件处理器
-  const off = useCallback((eventType: string, handler: (message: WebSocketMessage) => void) => {
+  const off = useCallback((eventType: string, handler: (message: any) => void) => {
     handlersRef.current.delete(eventType);
-    webSocketService.off(eventType, handler);
+    webSocketManager.off(eventType, handler);
   }, []);
 
   // 一次性事件处理器
-  const once = useCallback((eventType: string, handler: (message: WebSocketMessage) => void) => {
-    webSocketService.once(eventType, handler);
+  const once = useCallback((eventType: string, handler: (message: any) => void) => {
+    webSocketManager.once(eventType, handler);
   }, []);
 
   // 自动连接
@@ -81,8 +81,8 @@ export const useWebSocket = (autoConnect = true) => {
 
   // 默认事件处理器
   useEffect(() => {
-    // 状态更新处理器
-    const unsubscribeStateUpdate = webSocketService.on('state_update', (message) => {
+    // 默认事件处理器
+    const unsubscribeStateUpdate = webSocketManager.on('state_update', (message) => {
       const { langGraphState } = message.payload;
       if (langGraphState) {
         updateRealtimeData({ langGraphState });
@@ -96,7 +96,7 @@ export const useWebSocket = (autoConnect = true) => {
     });
 
     // 记忆更新处理器
-    const unsubscribeMemoryUpdate = webSocketService.on('memory_update', (message) => {
+    const unsubscribeMemoryUpdate = webSocketManager.on('memory_update', (message) => {
       const { memoryNetwork } = message.payload;
       if (memoryNetwork) {
         updateRealtimeData({ memoryNetwork });
@@ -104,13 +104,13 @@ export const useWebSocket = (autoConnect = true) => {
     });
 
     // 消息更新处理器
-    const unsubscribeMessageUpdate = webSocketService.on('message_update', (message) => {
+    const unsubscribeMessageUpdate = webSocketManager.on('message_update', (message) => {
       // 可以在这里处理实时消息更新
       console.log('实时消息更新:', message.payload);
     });
 
     // 错误处理器
-    const unsubscribeError = webSocketService.on('error', (message) => {
+    const unsubscribeError = webSocketManager.on('error', (message) => {
       addNotification({
         type: 'error',
         title: '实时更新错误',
@@ -119,13 +119,13 @@ export const useWebSocket = (autoConnect = true) => {
     });
 
     // 连接状态处理器
-    const unsubscribeConnectionOpened = webSocketService.on('connection_opened', () => {
+    const unsubscribeConnectionOpened = webSocketManager.on('connection_opened', () => {
       setLoading('websocket', false);
     });
 
-    const unsubscribeConnectionClosed = () => {
+    const unsubscribeConnectionClosed = webSocketManager.on('connection_closed', () => {
       setLoading('websocket', true);
-    };
+    });
 
     return () => {
       unsubscribeStateUpdate();
@@ -144,9 +144,8 @@ export const useWebSocket = (autoConnect = true) => {
     on,
     off,
     once,
-    isConnected: webSocketService.isConnected,
-    isConnecting: webSocketService.isConnecting,
-    readyState: webSocketService.readyState,
+    isConnected: webSocketManager.isConnected,
+    isConnecting: webSocketManager.isConnecting,
   };
 };
 
@@ -212,7 +211,7 @@ export const useVisualizationWebSocket = () => {
 
   // 注册专门的可视化事件处理器
   const onVisualizationUpdate = useCallback((callback: (data: any) => void) => {
-    return webSocketService.on('visualization_update', (message) => {
+    return webSocketManager.on('visualization_update', (message) => {
       const { type, data } = message.payload;
       callback({ type, data });
     });
@@ -220,9 +219,9 @@ export const useVisualizationWebSocket = () => {
 
   // 请求可视化数据
   const requestVisualizationData = useCallback((visualizationType: string, params?: any) => {
-    webSocketService.send({
-      type: 'visualization_request',
-      payload: {
+    webSocketManager.send({
+      type: 'state_update',
+    payload: {
         visualization_type: visualizationType,
         params: params || {},
       },
@@ -232,6 +231,6 @@ export const useVisualizationWebSocket = () => {
   return {
     onVisualizationUpdate,
     requestVisualizationData,
-    isConnected: webSocketService.isConnected,
+    isConnected: webSocketManager.isConnected,
   };
 };

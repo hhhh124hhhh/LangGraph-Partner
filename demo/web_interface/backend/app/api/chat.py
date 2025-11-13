@@ -22,6 +22,7 @@ from app.core.exceptions import (
     ToolExecutionError, NotFoundError
 )
 from app.core.security import InputValidator, rate_limit_dependency
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -68,8 +69,8 @@ async def chat(
             tool_calls=[],
             metadata={
                 "turn_id": turn_id,
-                "model": "glm-4.6",
-                "temperature": 0.7
+                "model": settings.llm_model,
+                "temperature": settings.llm_temperature
             }
         )
 

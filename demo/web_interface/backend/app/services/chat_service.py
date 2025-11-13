@@ -15,6 +15,7 @@ from app.models.chat import (
 )
 from app.core.exceptions import ValidationError, AIServiceError, SessionError
 from app.core.security import InputValidator
+from app.core.config import settings
 from app.utils.ai_partner import get_ai_partner_service
 
 logger = logging.getLogger(__name__)
@@ -80,8 +81,8 @@ class ChatService:
                 tool_calls=context_info["tool_calls"],
                 metadata={
                     "turn_id": self._generate_turn_id(),
-                    "model": self.ai_partner.config.get("llm_model", "glm-4.6"),
-                    "temperature": self.ai_partner.config.get("llm_temperature", 0.7),
+                    "model": self.ai_partner.config.get("llm_model", settings.llm_model),
+                    "temperature": self.ai_partner.config.get("llm_temperature", settings.llm_temperature),
                     "ai_partner_metadata": ai_result.get("metadata", {}),
                     "user_metadata": request.user_metadata or {}
                 }

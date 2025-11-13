@@ -1,4 +1,4 @@
-import { WebSocketMessage, UIState, Notification } from '@types/index';
+import { WebSocketMessage, UIState, Notification } from '@typesdef/index';
 
 export type WebSocketEventHandler = (message: WebSocketMessage) => void;
 
@@ -9,7 +9,7 @@ class WebSocketService {
   private reconnectDelay = 1000;
   private eventHandlers: Map<string, Set<WebSocketEventHandler>> = new Map();
   private pingInterval: NodeJS.Timeout | null = null;
-  private isConnecting = false;
+  private _isConnecting = false;
 
   constructor() {
     this.setupEventHandlers();
@@ -34,11 +34,11 @@ class WebSocketService {
   }
 
   connect(url?: string): Promise<void> {
-    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+    if (this._isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
       return Promise.resolve();
     }
 
-    this.isConnecting = true;
+    this._isConnecting = true;
 
     const wsUrl = url || this.getWebSocketUrl();
     console.log('[WebSocket] Connecting to:', wsUrl);
@@ -49,7 +49,7 @@ class WebSocketService {
 
         this.ws.onopen = () => {
           console.log('[WebSocket] Connected');
-          this.isConnecting = false;
+          this._isConnecting = false;
           this.reconnectAttempts = 0;
           this.startPingInterval();
           this.emit({ type: 'connection_opened', payload: { connected: true }, timestamp: new Date().toISOString() });
@@ -67,7 +67,7 @@ class WebSocketService {
 
         this.ws.onclose = (event) => {
           console.log('[WebSocket] Disconnected:', event.code, event.reason);
-          this.isConnecting = false;
+          this._isConnecting = false;
           this.stopPingInterval();
           this.emit({ type: 'connection_closed', payload: { code: event.code, reason: event.reason }, timestamp: new Date().toISOString() });
           this.handleReconnect();
@@ -75,12 +75,12 @@ class WebSocketService {
 
         this.ws.onerror = (error) => {
           console.error('[WebSocket] Error:', error);
-          this.isConnecting = false;
+          this._isConnecting = false;
           this.emit({ type: 'connection_error', payload: { error }, timestamp: new Date().toISOString() });
           reject(error);
         };
       } catch (error) {
-        this.isConnecting = false;
+        this._isConnecting = false;
         reject(error);
       }
     });
@@ -230,7 +230,7 @@ class WebSocketService {
   }
 
   get isConnecting(): boolean {
-    return this.isConnecting;
+    return this._isConnecting;
   }
 }
 

@@ -194,7 +194,7 @@ async def health_check_api():
 # API 路由注册
 def register_routers():
     """注册所有API路由"""
-    from app.api import chat, persona, memory, knowledge, demo
+    from app.api import chat, persona, memory, knowledge, demo, settings
 
     # 注册路由模块
     app.include_router(
@@ -234,26 +234,18 @@ def register_routers():
         tags=["演示"]
     )
 
+    app.include_router(
+        settings.router,
+        prefix="/api/settings",
+        tags=["设置"]
+    )
+
     logger.info("✅ 所有API路由注册完成")
 
 
 # 注册路由
 register_routers()
 
-
-# 开发服务器启动
-if __name__ == "__main__":
-    logger.info("🚀 启动开发服务器...")
-    logger.info(f"📍 服务地址: {settings.get_api_url()}")
-    logger.info(f"📚 API文档: {settings.get_api_url()}/docs")
-
-    uvicorn.run(
-        "app.main:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=settings.api_reload,
-        log_level=settings.log_level.lower()
-    )
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -286,3 +278,17 @@ async def websocket_endpoint(websocket: WebSocket):
                 })
     except WebSocketDisconnect:
         logger.info("🔌 WebSocket 连接已关闭")
+
+# 开发服务器启动
+if __name__ == "__main__":
+    logger.info("🚀 启动开发服务器...")
+    logger.info(f"📍 服务地址: {settings.get_api_url()}")
+    logger.info(f"📚 API文档: {settings.get_api_url()}/docs")
+
+    uvicorn.run(
+        "app.main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.api_reload,
+        log_level=settings.log_level.lower()
+    )

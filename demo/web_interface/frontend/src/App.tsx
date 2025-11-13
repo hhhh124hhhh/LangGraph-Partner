@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from '@stores/index';
-import { useWebSocket } from '@hooks/index';
+import { useWebSocketManager } from '@hooks/useWebSocketManager';
 
 // 页面组件（稍后创建）
 import HomePage from '@pages/HomePage';
@@ -22,7 +22,17 @@ import LoadingSpinner from '@components/LoadingSpinner';
 
 const App: React.FC = () => {
   const { theme, user, setUser } = useAppStore();
-  const { isConnected } = useWebSocket();
+  const {
+    isConnected,
+    connectionMode,
+    connectionQuality,
+    refreshConnection,
+    getConnectionModeText,
+    getConnectionModeIcon
+  } = useWebSocketManager({
+    autoConnect: true,
+    showConnectionNotifications: true
+  });
 
   // 初始化应用
   useEffect(() => {
@@ -132,7 +142,7 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        {/* 连接状态指示器 */}
+        {}
         <div className="fixed top-4 left-4 z-50 flex items-center space-x-2">
           <div
             className={`w-2 h-2 rounded-full ${

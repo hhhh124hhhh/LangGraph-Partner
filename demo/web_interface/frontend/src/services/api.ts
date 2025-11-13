@@ -11,7 +11,7 @@ import {
   ComparisonRequest,
   ComparisonResponse,
   BaseResponse
-} from '@types/index';
+} from '@typesdef/index';
 
 class ApiService {
   private client: AxiosInstance;
@@ -76,12 +76,88 @@ class ApiService {
   }
 
   // 对话相关API
-  async sendMessage(request: ChatRequest): Promise<ChatResponse> {
-    const response = await this.client.post<BaseResponse<ChatResponse>>('/chat/', request);
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Failed to send message');
+  async sendMessage(request: ChatRequest, onChunk?: (chunk: string, metadata?: any) => void): Promise<ChatResponse> {
+    if (onChunk) {
+      // 流式输出处理
+      const response = await this.client.post('/chat/', request, {
+        responseType: 'stream',
+        headers: {
+          'Accept': 'text/event-stream'
+        }
+      });
+
+      return new Promise((resolve, reject) => {
+        const stream = response.data;
+        let dataBuffer = '';
+        let finalResponse: ChatResponse | null = null;
+        let fullContent = '';
+
+        stream.on('data', (chunk: Buffer) => {
+          const chunkString = chunk.toString('utf-8');
+          dataBuffer += chunkString;
+          
+          // 处理SSE格式的数据流
+          const events = dataBuffer.split('\n\n');
+          dataBuffer = events.pop() || '';
+          
+          for (const event of events) {
+            if (!event.trim()) continue;
+            
+            const lines = event.split('\n');
+            let data = '';
+            let eventType = 'message';
+            
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                eventType = line.slice(6).trim();
+              } else if (line.startsWith('data:')) {
+                data += line.slice(5).trim();
+              }
+            }
+            
+            if (!data) continue;
+            
+            try {
+              const parsedData = JSON.parse(data);
+              
+              if (eventType === 'message' && parsedData.type === 'stream') {
+                // 处理流式内容
+                const chunkContent = parsedData.content || '';
+                fullContent += chunkContent;
+                onChunk(chunkContent);
+              } else if (eventType === 'complete' || parsedData.type === 'complete') {
+                // 处理完整响应
+                finalResponse = {
+                  ...parsedData,
+                  message: fullContent || parsedData.message
+                };
+              }
+            } catch (error) {
+              console.error('Error parsing SSE data:', error);
+            }
+          }
+        });
+
+        stream.on('end', () => {
+          if (finalResponse) {
+            resolve(finalResponse);
+          } else {
+            reject(new Error('No complete response received'));
+          }
+        });
+
+        stream.on('error', (error: any) => {
+          reject(error);
+        });
+      });
+    } else {
+      // 非流式输出处理（保持原有逻辑）
+      const response = await this.client.post<BaseResponse<ChatResponse>>('/chat/', request);
+      if (!response.data.success || !response.data.data) {
+        throw new Error(response.data.error || 'Failed to send message');
+      }
+      return response.data.data;
     }
-    return response.data.data;
   }
 
   async getChatState(sessionId: string): Promise<LangGraphState> {
@@ -145,6 +221,46 @@ class ApiService {
       console.error('[API] Health check failed:', error);
       return false;
     }
+  }
+
+  async getModel(): Promise<{ model: string, env: { LLM_MODEL?: string, DEFAULT_MODEL?: string } }>{
+    const response = await this.client.get<BaseResponse<{ model: string, env: { LLM_MODEL?: string, DEFAULT_MODEL?: string } }>>('/settings/model');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to get model');
+    }
+    return response.data.data;
+  }
+
+  async setModel(model: string): Promise<string> {
+    const response = await this.client.put<BaseResponse<{ model: string }>>('/settings/model', { model });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to set model');
+    }
+    return response.data.data.model;
+  }
+
+  async getSettingsConfig(): Promise<{ api_key?: string, base_url?: string, model?: string, sources?: {api_key: string, base_url: string, model: string}, has_env_config?: boolean, env_status?: string }>{
+    const response = await this.client.get<BaseResponse<{ api_key?: string, base_url?: string, model?: string }>>('/settings/config');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to get settings');
+    }
+    return response.data.data;
+  }
+
+  async setSettingsConfig(payload: { api_key?: string, base_url?: string, model?: string }): Promise<{ api_key?: string, base_url?: string, model?: string }>{
+    const response = await this.client.put<BaseResponse<{ api_key?: string, base_url?: string, model?: string }>>('/settings/config', payload);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to update settings');
+    }
+    return response.data.data;
+  }
+
+  async validateSettings(payload?: { api_key?: string, base_url?: string }): Promise<{ valid: boolean, models: string[] }>{
+    const response = await this.client.post<BaseResponse<{ valid: boolean, models: string[] }>>('/settings/validate', payload || {});
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to validate settings');
+    }
+    return response.data.data;
   }
 
   // 通用GET请求

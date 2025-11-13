@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
-import { ChatMessage, ChatRequest, ChatResponse, Persona, LangGraphState } from '@types/index';
+import { devtools, persist } from 'zustand/middleware';
+import { ChatMessage, ChatRequest, ChatResponse, Persona, LangGraphState } from '@typesdef/index';
 
-interface ChatState {
+// 移除自定义的PersistedChatState类型，使用Zustand的默认类型
+
+export interface ChatState {
   // 会话管理
   sessions: Array<{
     id: string;
@@ -49,7 +51,8 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       // 初始状态
       sessions: [],
       currentSessionId: null,
@@ -292,6 +295,19 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: 'chat-store',
-    }
+      storage: {
+        getItem: (name) => {
+          const item = localStorage.getItem(name);
+          return item ? JSON.parse(item) : null;
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name);
+        },
+      },
+      // 使用默认的partialize行为，持久化整个状态
+    })
   )
 );

@@ -14,6 +14,8 @@ import logging
 project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
+from app.core.config import settings
+
 # 导入现有的AI Partner模块
 try:
     from agents.partner_agent import AIPartnerAgent, create_partner_agent
@@ -308,11 +310,15 @@ def get_ai_partner_service(config: Optional[Dict[str, Any]] = None) -> AIPartner
 
     if _ai_partner_service is None:
         if config is None:
-            # 使用默认配置
+            # 使用默认配置，融合全局设置
             config = {
-                "config_dir": "./config",
-                "vector_db_path": "./vector_db",
-                "memory_dir": "./memory"
+                "config_dir": settings.config_dir,
+                "vector_db_path": settings.vector_db_path,
+                "memory_dir": settings.memory_dir,
+                "llm_model": settings.llm_model,
+                "openai_api_key": settings.openai_api_key,
+                "openai_base_url": settings.openai_base_url,
+                "llm_temperature": settings.llm_temperature,
             }
 
         _ai_partner_service = AIPartnerService(config)

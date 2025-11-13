@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { devtools } from 'zustand/middleware';
-import { UIState, Notification, LangGraphState, MemoryNetwork, DemoScenario } from '@types/index';
+import { UIState, Notification, LangGraphState, MemoryNetwork, DemoScenario } from '@typesdef/index';
 
-interface AppState extends UIState {
+export interface AppState extends UIState {
   // 用户相关
   user: {
     id: string;
@@ -119,10 +119,13 @@ export const useAppStore = create<AppState>()(
             notifications: [newNotification, ...state.notifications].slice(0, 50), // 最多保留50条
           }));
 
-          // 自动标记为已读（5秒后）
-          setTimeout(() => {
-            get().markNotificationRead(id);
-          }, 5000);
+          // 自动标记为已读（使用传入的duration或默认5秒）
+          const autoReadDuration = notification.duration || 5000;
+          if (autoReadDuration > 0) {
+            setTimeout(() => {
+              get().markNotificationRead(id);
+            }, autoReadDuration);
+          }
         },
 
         markNotificationRead: (id) =>
