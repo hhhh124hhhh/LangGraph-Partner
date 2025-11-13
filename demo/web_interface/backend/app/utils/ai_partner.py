@@ -231,7 +231,7 @@ class MockAIPartner:
         responses = [
             f"我收到了您的消息：{message}",
             f"关于'{message}'，这是一个很好的问题。",
-            f"让我想想关于'{message'的相关信息...",
+            f"让我想想关于'{message}'的相关信息...",
             f"根据我的理解，{message}涉及到技术实现方面。",
         ]
 
