@@ -16,6 +16,7 @@ venv/
 env/
 env3/
 ENV/
+demo/.venv/
 
 # Package directories
 *.egg/

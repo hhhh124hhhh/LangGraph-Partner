@@ -12,43 +12,44 @@ class Settings(BaseSettings):
     """应用配置类"""
 
     # API 配置
-    api_host: str = Field(default="0.0.0.0", description="API服务器主机")
-    api_port: int = Field(default=8000, description="API服务器端口")
-    api_debug: bool = Field(default=False, description="调试模式")
-    api_reload: bool = Field(default=False, description="自动重载")
+    api_host: str = Field(default="0.0.0.0", description="API服务器主机", alias="API_HOST")
+    api_port: int = Field(default=8000, description="API服务器端口", alias="API_PORT")
+    api_debug: bool = Field(default=True, description="调试模式", alias="API_DEBUG")
+    api_reload: bool = Field(default=True, description="自动重载", alias="API_RELOAD")
 
     # CORS 配置 - 使用ClassVar避免Pydantic解析
-    cors_origins: ClassVar[List[str]] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    cors_origins: ClassVar[List[str]] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3004", "http://127.0.0.1:3004"]
 
     # 智谱AI API 配置
-    openai_api_key: str = Field(..., description="智谱AI API密钥")
-    ai_claude_api_key: Optional[str] = Field(None, description="AI Claude API密钥")
+    openai_api_key: str = Field(default="", description="智谱AI API密钥", alias="OPENAI_API_KEY")
+    ai_claude_api_key: Optional[str] = Field(None, description="AI Claude API密钥", alias="AI_CLAUDE_API_KEY")
     openai_base_url: str = Field(
         default="https://open.bigmodel.cn/api/paas/v4",
-        description="OpenAI API基础URL"
+        description="OpenAI API基础URL",
+        alias="OPENAI_BASE_URL"
     )
 
     # 数据存储路径
-    vector_db_path: str = Field(default="./vector_db", description="向量数据库路径")
-    memory_dir: str = Field(default="./memory", description="记忆存储目录")
-    config_dir: str = Field(default="./config", description="配置文件目录")
+    vector_db_path: str = Field(default="./vector_db", description="向量数据库路径", alias="VECTOR_DB_PATH")
+    memory_dir: str = Field(default="./memory", description="记忆存储目录", alias="MEMORY_DIR")
+    config_dir: str = Field(default="./config", description="配置文件目录", alias="CONFIG_DIR")
 
     # 模型配置
-    llm_model: str = Field(default="glm-4-flash", description="LLM模型名称")
-    llm_temperature: float = Field(default=0.7, ge=0.0, le=1.0, description="LLM温度参数")
-    llm_max_tokens: int = Field(default=2000, ge=1, description="LLM最大令牌数")
+    llm_model: str = Field(default="glm-4-flash", description="LLM模型名称", alias="LLM_MODEL")
+    llm_temperature: float = Field(default=0.7, ge=0.0, le=1.0, description="LLM温度参数", alias="LLM_TEMPERATURE")
+    llm_max_tokens: int = Field(default=2000, ge=1, description="LLM最大令牌数", alias="LLM_MAX_TOKENS")
 
     # 日志配置
-    log_level: str = Field(default="INFO", description="日志级别")
-    log_format: str = Field(default="json", description="日志格式")
+    log_level: str = Field(default="DEBUG", description="日志级别", alias="LOG_LEVEL")
+    log_format: str = Field(default="text", description="日志格式", alias="LOG_FORMAT")
 
     # 会话配置
-    default_session_timeout: int = Field(default=3600, description="默认会话超时时间（秒）")
-    max_context_turns: int = Field(default=10, ge=1, description="最大上下文轮次")
+    default_session_timeout: int = Field(default=3600, description="默认会话超时时间（秒）", alias="DEFAULT_SESSION_TIMEOUT")
+    max_context_turns: int = Field(default=10, ge=1, description="最大上下文轮次", alias="MAX_CONTEXT_TURNS")
 
     # 搜索配置
-    default_search_results: int = Field(default=5, ge=1, description="默认搜索结果数量")
-    min_similarity_score: float = Field(default=0.3, ge=0.0, le=1.0, description="最小相似度阈值")
+    default_search_results: int = Field(default=5, ge=1, description="默认搜索结果数量", alias="DEFAULT_SEARCH_RESULTS")
+    min_similarity_score: float = Field(default=0.3, ge=0.0, le=1.0, description="最小相似度阈值", alias="MIN_SIMILARITY_SCORE")
 
     # 暂时注释掉cors_origins验证器，使用默认值
     # @validator("cors_origins", pre=True)
@@ -67,33 +68,13 @@ class Settings(BaseSettings):
         return v.upper()
 
     class Config:
-        env_file = ["../../../.env", "../../.env", ".env"]
+        env_file = ["../../../.env"]  # 只从 demo/.env 加载配置
         env_file_encoding = "utf-8"
         case_sensitive = False
         extra = "ignore"
 
-        # 字段别名映射
-        fields = {
-            "api_host": "API_HOST",
-            "api_port": "API_PORT",
-            "api_debug": "API_DEBUG",
-            "api_reload": "API_RELOAD",
-            "openai_api_key": "OPENAI_API_KEY",
-            "ai_claude_api_key": "AI_CLAUDE_API_KEY",
-            "openai_base_url": "OPENAI_BASE_URL",
-            "vector_db_path": "VECTOR_DB_PATH",
-            "memory_dir": "MEMORY_DIR",
-            "config_dir": "CONFIG_DIR",
-            "llm_model": "LLM_MODEL",
-            "llm_temperature": "LLM_TEMPERATURE",
-            "llm_max_tokens": "LLM_MAX_TOKENS",
-            "log_level": "LOG_LEVEL",
-            "log_format": "LOG_FORMAT",
-            "default_session_timeout": "DEFAULT_SESSION_TIMEOUT",
-            "max_context_turns": "MAX_CONTEXT_TURNS",
-            "default_search_results": "DEFAULT_SEARCH_RESULTS",
-            "min_similarity_score": "MIN_SIMILARITY_SCORE"
-        }
+    # Pydantic V2 使用 field_validator 替代 fields 映射
+    # 环境变量别名直接在 Field 定义中设置
 
     def get_api_url(self) -> str:
         """获取API完整URL"""

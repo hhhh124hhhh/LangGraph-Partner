@@ -4,6 +4,27 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Send,
+  Mic,
+  Paperclip,
+  Smile,
+  MoreVertical,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
+  RefreshCw,
+  Trash2,
+  Plus,
+  MessageSquare,
+  Settings,
+  User,
+  Bot,
+  Check,
+  AlertCircle,
+  Clock,
+  Zap
+} from 'lucide-react';
 import { useAppStore } from '@stores/index';
 import { useChatWebSocketManager } from '@hooks/useWebSocketManager';
 import { ConnectionMode } from '@services/websocketManager';
@@ -11,6 +32,7 @@ import { apiService } from '@services/api';
 import Button from '@components/Button';
 import LoadingSpinner from '@components/LoadingSpinner';
 import { logger } from '@utils/logger';
+import { cn, formatDateTime } from '@utils/index';
 
 // 消息类型定义
 interface ChatMessage {
@@ -26,6 +48,7 @@ interface ChatMessage {
     model?: string;
     tools_used?: string[];
   };
+  user_rating?: 'like' | 'dislike' | null;
 }
 
 interface ChatSession {
@@ -71,13 +94,36 @@ const ChatPage: React.FC = () => {
   
   // 状态管理
   const [currentSessionId, setCurrentSessionId] = useState<string>('');
-  const {
-    isConnected,
-    connectionMode,
-    sendChatMessage,
-    availableFeatures,
-    canSendMessages
-  } = useChatWebSocketManager(currentSessionId); // 传递当前sessionId
+  // 使用更新后的useChatWebSocketManager，添加消息响应监听
+  const { isConnected, connectionMode, sendChatMessage, availableFeatures, canSendMessages } = useChatWebSocketManager(currentSessionId, {
+    onMessage: (message) => {
+      if (message.type === 'message_response') {
+        logger.info('收到WebSocket消息响应:', message.payload);
+        setMessages(prev => {
+          // 找到最后一条用户消息
+          const lastUserMessageIndex = [...prev].reverse().findIndex(msg => msg.role === 'user' && msg.status === 'sent');
+          if (lastUserMessageIndex === -1) return prev;
+          
+          const actualIndex = prev.length - 1 - lastUserMessageIndex;
+          const aiMessageId = `ai_${Date.now()}`;
+          
+          // 在用户消息后添加AI响应
+          return [...prev.slice(0, actualIndex + 1), {
+            id: aiMessageId,
+            role: 'assistant',
+            content: message.payload.content,
+            timestamp: message.payload.timestamp || new Date().toISOString(),
+            session_id: message.payload.session_id,
+            status: 'completed'
+          }];
+        });
+        setIsTyping(false);
+        setTypingIndicator({ is_typing: false });
+        inputRef.current?.focus();
+      }
+    }
+  });
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -85,6 +131,12 @@ const ChatPage: React.FC = () => {
   const [typingIndicator, setTypingIndicator] = useState<TypingIndicator>({ is_typing: false });
   const [isTyping, setIsTyping] = useState(false);
   const [showSessions, setShowSessions] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // WebSocket消息处理已在useChatWebSocketManager的onMessage回调中实现
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -293,6 +345,83 @@ const ChatPage: React.FC = () => {
     });
   };
 
+  // 复制消息内容
+  const copyMessage = useCallback((content: string) => {
+    navigator.clipboard.writeText(content).then(() => {
+      // 可以添加提示
+      console.log('消息已复制到剪贴板');
+    });
+  }, []);
+
+  // 消息评分
+  const rateMessage = useCallback((messageId: string, rating: 'like' | 'dislike') => {
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, user_rating: msg.user_rating === rating ? null : rating }
+        : msg
+    ));
+  }, []);
+
+  // 重新生成AI回复
+  const regenerateResponse = useCallback(async (messageId: string) => {
+    const message = messages.find(msg => msg.id === messageId);
+    if (!message || message.role !== 'assistant') return;
+
+    setMessages(prev => prev.map(msg =>
+      msg.id === messageId
+        ? { ...msg, status: 'processing', content: '' }
+        : msg
+    ));
+
+    try {
+      // 模拟重新生成
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      const newContent = `重新生成的回复：${message.content}`;
+
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, status: 'completed', content: newContent }
+          : msg
+      ));
+    } catch (error) {
+      setMessages(prev => prev.map(msg =>
+        msg.id === messageId
+          ? { ...msg, status: 'error', content: '重新生成失败' }
+          : msg
+      ));
+    }
+  }, [messages]);
+
+  // 检测移动端
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Markdown渲染简化版
+  const renderMessage = (content: string) => {
+    // 简单的markdown渲染
+    return content
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/`(.*?)`/g, '<code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">$1</code>')
+      .replace(/\n/g, '<br>');
+  };
+
+  // 快捷键提示
+  const shortcuts = [
+    { key: 'Enter', description: '发送消息' },
+    { key: 'Shift+Enter', description: '换行' },
+    { key: 'Ctrl/Cmd+K', description: '搜索对话' },
+    { key: 'Ctrl/Cmd+N', description: '新对话' },
+    { key: 'Ctrl/Cmd+/', description: '显示快捷键' }
+  ];
+
   return (
     <div className="h-full bg-white dark:bg-gray-800">
       <div className="flex h-full">
@@ -384,53 +513,201 @@ const ChatPage: React.FC = () => {
           {/* 消息列表 */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-500 dark:text-gray-400">
-                  <div className="text-lg mb-2">👋 欢迎来到AI Partner</div>
-                  <div className="text-sm">开始您的对话吧！我可以帮助您解答问题、提供建议或进行日常交流。</div>
+              <div className="flex-1 flex items-center justify-center">
+                <div className="max-w-md mx-auto text-center">
+                  {/* 欢迎图标 */}
+                  <div className="mb-6">
+                    <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <Bot className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+
+                  {/* 欢迎文字 */}
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                    👋 欢迎使用 AI Partner
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-8">
+                    我是您的智能AI助手，可以为您提供专业的对话服务。
+                    无论是技术问题、日常咨询还是创意思考，我都会尽力帮助您。
+                  </p>
+
+                  {/* 快速开始卡片 */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="text-blue-600 dark:text-blue-400 text-2xl mb-2">💬</div>
+                      <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-1">智能对话</h3>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        自然流畅的交流体验
+                      </p>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                      <div className="text-purple-600 dark:text-purple-400 text-2xl mb-2">🧠</div>
+                      <h3 className="font-medium text-purple-800 dark:text-purple-200 mb-1">记忆管理</h3>
+                      <p className="text-sm text-purple-700 dark:text-purple-300">
+                        记住重要的对话信息
+                      </p>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                      <div className="text-green-600 dark:text-green-400 text-2xl mb-2">🎯</div>
+                      <h3 className="font-medium text-green-800 dark:text-green-200 mb-1">个性化服务</h3>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        根据您的喜好定制回应
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 建议问题 */}
+                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+                    <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      💡 试试这些问题：
+                    </h3>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {[
+                        '你好，请介绍一下自己',
+                        '帮我分析一下技术发展趋势',
+                        '我需要一些创意灵感',
+                        '如何提高工作效率？'
+                      ].map((question, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setInputMessage(question)}
+                          className="px-3 py-2 text-sm bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             ) : (
               messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} group`}
                 >
                   <div
-                    className={`max-w-2xl px-4 py-3 rounded-lg ${
+                    className={cn(
+                      "max-w-2xl px-4 py-3 rounded-lg relative",
                       message.role === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                    }`}
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600'
+                    )}
                   >
-                    <div className="flex items-start space-x-2">
+                    <div className="flex items-start space-x-3">
+                      {/* 头像 */}
                       <div className="flex-shrink-0">
-                        {message.role === 'user' ? '👤' : '🤖'}
-                      </div>
-                      <div className="flex-1">
-                        <div className="whitespace-pre-wrap break-words">
-                          {message.content}
+                        <div className={cn(
+                          "w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium",
+                          message.role === 'user'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
+                        )}>
+                          {message.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                         </div>
-                        {message.status === 'processing' && (
-                          <div className="flex items-center space-x-1 mt-2">
-                            <LoadingSpinner size="sm" />
-                            <span className="text-xs opacity-70">正在处理...</span>
-                          </div>
-                        )}
-                        {message.status === 'error' && (
-                          <div className="text-xs opacity-70 mt-2">
-                            ❌ 发送失败
-                          </div>
-                        )}
-                        {message.metadata && message.metadata.response_time && (
-                          <div className="text-xs opacity-70 mt-2">
-                            响应时间: {message.metadata.response_time}ms
-                            {message.metadata.tokens_used && ` · ${message.metadata.tokens_used} tokens`}
-                          </div>
-                        )}
                       </div>
-                      <div className="text-xs opacity-70">
-                        {formatTime(message.timestamp)}
+
+                      {/* 消息内容 */}
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="whitespace-pre-wrap break-words"
+                          dangerouslySetInnerHTML={{ __html: renderMessage(message.content) }}
+                        />
+
+                        {/* 处理状态 */}
+                        {message.status === 'processing' && (
+                          <div className="flex items-center space-x-2 mt-3 text-gray-600 dark:text-gray-400">
+                            <LoadingSpinner size="sm" />
+                            <span className="text-sm">AI正在思考...</span>
+                          </div>
+                        )}
+
+                        {message.status === 'error' && (
+                          <div className="flex items-center space-x-2 mt-3 text-red-600 dark:text-red-400">
+                            <AlertCircle className="w-4 h-4" />
+                            <span className="text-sm">发送失败，请重试</span>
+                          </div>
+                        )}
+
+                        {/* 元数据 */}
+                        {message.metadata && (
+                          <div className="flex items-center space-x-3 mt-2 text-xs opacity-70">
+                            {message.metadata.response_time && (
+                              <span className="flex items-center space-x-1">
+                                <Zap className="w-3 h-3" />
+                                <span>{message.metadata.response_time}ms</span>
+                              </span>
+                            )}
+                            {message.metadata.tokens_used && (
+                              <span className="flex items-center space-x-1">
+                                <span>📝</span>
+                                <span>{message.metadata.tokens_used} tokens</span>
+                              </span>
+                            )}
+                            <span className="flex items-center space-x-1">
+                              <Clock className="w-3 h-3" />
+                              <span>{formatTime(message.timestamp)}</span>
+                            </span>
+                          </div>
+                        )}
+
+                        {/* 操作按钮 */}
+                        <div className={cn(
+                          "flex items-center space-x-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity",
+                          message.role === 'assistant' ? 'justify-start' : 'justify-end'
+                        )}>
+                          {message.role === 'assistant' && message.status === 'completed' && (
+                            <>
+                              <button
+                                onClick={() => copyMessage(message.content)}
+                                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                title="复制"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => regenerateResponse(message.id)}
+                                className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                title="重新生成"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => rateMessage(message.id, 'like')}
+                                className={cn(
+                                  "p-1.5 rounded transition-colors",
+                                  message.user_rating === 'like'
+                                    ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                )}
+                                title="点赞"
+                              >
+                                <ThumbsUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => rateMessage(message.id, 'dislike')}
+                                className={cn(
+                                  "p-1.5 rounded transition-colors",
+                                  message.user_rating === 'dislike'
+                                    ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                    : 'hover:bg-gray-200 dark:hover:bg-gray-600'
+                                )}
+                                title="点踩"
+                              >
+                                <ThumbsDown className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {message.role === 'user' && (
+                            <button
+                              onClick={() => copyMessage(message.content)}
+                              className="p-1.5 rounded hover:bg-blue-400 hover:bg-opacity-20 transition-colors"
+                              title="复制"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -441,30 +718,128 @@ const ChatPage: React.FC = () => {
           </div>
 
           {/* 输入区域 */}
-          <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex space-x-3">
-              <textarea
-                ref={inputRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="输入消息... (Enter发送，Shift+Enter换行)"
-                className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={1}
-                disabled={!canSendMessages || isLoading}
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={!inputMessage.trim() || !canSendMessages || isLoading}
-                className="px-6"
-              >
-                {isLoading ? <LoadingSpinner size="sm" /> : '发送'}
-              </Button>
-            </div>
-            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {isTyping ? 'AI正在输入...' :
-               canSendMessages ? '已连接到AI Partner' :
-               '连接中...'}
+          <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-4">
+            <div className="max-w-4xl mx-auto">
+              {/* 快捷操作栏 */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <Smile className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsRecording(!isRecording)}
+                    className={cn(
+                      "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200",
+                      isRecording && "text-red-500 animate-pulse"
+                    )}
+                  >
+                    <Mic className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center space-x-1">
+                    <div className={cn(
+                      "w-2 h-2 rounded-full",
+                      isConnected ? 'bg-green-500' : 'bg-red-500'
+                    )} />
+                    <span>{isConnected ? '已连接' : '连接中'}</span>
+                  </span>
+                  <span>•</span>
+                  <span>{inputMessage.length}/2000</span>
+                </div>
+              </div>
+
+              {/* 主输入框 */}
+              <div className="flex items-end space-x-3">
+                <div className="flex-1 relative">
+                  <textarea
+                    ref={inputRef}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value.slice(0, 2000))}
+                    onKeyDown={handleKeyDown}
+                    placeholder="输入消息... (Enter发送，Shift+Enter换行)"
+                    className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    rows={isMobile ? 1 : 2}
+                    disabled={!canSendMessages || isLoading}
+                    style={{ minHeight: '50px', maxHeight: '150px' }}
+                  />
+
+                  {/* 发送按钮 */}
+                  <Button
+                    onClick={sendMessage}
+                    disabled={!inputMessage.trim() || !canSendMessages || isLoading}
+                    className={cn(
+                      "absolute right-2 bottom-2 p-2 rounded-lg transition-all",
+                      inputMessage.trim() && canSendMessages && !isLoading
+                        ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+                    )}
+                  >
+                    {isLoading ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <Send className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* 状态提示 */}
+              <div className="mt-2 flex items-center justify-between">
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {typingIndicator.is_typing ? (
+                    <span className="flex items-center space-x-1 text-blue-500">
+                      <LoadingSpinner size="sm" />
+                      <span>{typingIndicator.message}</span>
+                    </span>
+                  ) : canSendMessages ? (
+                    <span>💡 提示：按 Ctrl+/ 查看快捷键</span>
+                  ) : (
+                    <span>正在连接到AI Partner...</span>
+                  )}
+                </div>
+
+                {/* 快捷键提示 */}
+                <div className="text-xs text-gray-400 dark:text-gray-500">
+                  <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded">Enter</kbd> 发送 •
+                  <kbd className="px-1 py-0.5 bg-gray-200 dark:bg-gray-700 rounded ml-1">Shift+Enter</kbd> 换行
+                </div>
+              </div>
+
+              {/* Emoji 选择器 */}
+              {showEmojiPicker && (
+                <div className="absolute bottom-20 left-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 z-10">
+                  <div className="grid grid-cols-8 gap-1">
+                    {['😀', '😊', '😂', '🤔', '👍', '👎', '❤️', '🎉', '🔥', '✨', '💡', '🚀'].map(emoji => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          setInputMessage(prev => prev + emoji);
+                          setShowEmojiPicker(false);
+                          inputRef.current?.focus();
+                        }}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-lg"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

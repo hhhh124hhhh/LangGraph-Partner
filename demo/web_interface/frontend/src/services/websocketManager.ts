@@ -159,7 +159,7 @@ class WebSocketManager {
     });
 
     // 转发其他事件
-    ['state_update', 'message_update', 'memory_update', 'error', 'ping'].forEach(eventType => {
+    ['state_update', 'message_update', 'memory_update', 'error', 'ping', 'message', 'message_response'].forEach(eventType => {
       enhancedWebSocketService.on(eventType, (message) => {
         this.emit(message);
       });
@@ -187,7 +187,7 @@ class WebSocketManager {
     });
 
     // 转发其他事件
-    ['state_update', 'message_update', 'memory_update', 'error', 'ping'].forEach(eventType => {
+    ['state_update', 'message_update', 'memory_update', 'error', 'ping', 'message', 'message_response'].forEach(eventType => {
       webSocketFallback.on(eventType, (message) => {
         this.emit(message);
       });

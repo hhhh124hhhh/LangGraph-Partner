@@ -151,8 +151,8 @@ export interface MemoryCluster {
   main_topics: string[];
 }
 
-// 知识检索相关
-export interface KnowledgeSearchRequest {
+// 知识检索相关（对话系统）
+export interface LegacyKnowledgeSearchRequest {
   query: string;
   session_id?: string;
   filters?: {
@@ -163,7 +163,7 @@ export interface KnowledgeSearchRequest {
   limit?: number;
 }
 
-export interface KnowledgeSearchResponse {
+export interface LegacyKnowledgeSearchResponse {
   results: KnowledgeItem[];
   total_count: number;
   search_time_ms: number;
@@ -307,7 +307,7 @@ export interface NotificationAction {
 
 // 实时更新相关
 export interface WebSocketMessage {
-  type: 'state_update' | 'message_update' | 'memory_update' | 'error' | 'ping' | 'connection_error' | 'connection_opened' | 'connection_closed' | 'connection_quality_update';
+  type: 'state_update' | 'message_update' | 'memory_update' | 'error' | 'ping' | 'message' | 'message_response' | 'connection_error' | 'connection_opened' | 'connection_closed' | 'connection_quality_update';
   payload: any;
   timestamp: string;
   session_id?: string;
@@ -347,4 +347,159 @@ export interface FormField {
     pattern?: string;
     message?: string;
   };
+}
+
+// 知识库相关类型定义
+export interface KnowledgeStats {
+  total_documents: number;
+  total_tags: number;
+  total_chunks: number;
+  storage_size_mb: number;
+  last_updated: string;
+  document_types: Record<string, number>;
+  tag_distribution: Record<string, number>;
+}
+
+export interface KnowledgeDocument {
+  id: string;
+  title: string;
+  content: string;
+  file_path: string;
+  file_size: number;
+  created_at: string;
+  updated_at: string;
+  tags: string[];
+  metadata: {
+    author?: string;
+    description?: string;
+    category?: string;
+    language?: string;
+    word_count?: number;
+    chunk_count?: number;
+  };
+  similarity_score?: number;
+}
+
+export interface KnowledgeSearchRequest {
+  query: string;
+  limit?: number;
+  offset?: number;
+  filters?: {
+    tags?: string[];
+    category?: string;
+    date_range?: {
+      start: string;
+      end: string;
+    };
+  };
+  similarity_threshold?: number;
+}
+
+export interface KnowledgeSearchResponse {
+  results: KnowledgeDocument[];
+  total_count: number;
+  query_time_ms: number;
+  page_info: {
+    current_page: number;
+    total_pages: number;
+    page_size: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+  search_metadata: {
+    query_processed: string;
+    filters_applied: string[];
+    search_strategy: string;
+  };
+}
+
+export interface TagStats {
+  tag: string;
+  count: number;
+  last_used: string;
+  related_tags: string[];
+}
+
+export interface DocumentUploadRequest {
+  file: File;
+  title?: string;
+  description?: string;
+  tags?: string[];
+  category?: string;
+}
+
+export interface DocumentUploadResponse {
+  document_id: string;
+  status: 'success' | 'partial' | 'error';
+  processed_chunks: number;
+  total_chunks: number;
+  warnings?: string[];
+  errors?: string[];
+}
+
+export interface SimilarDocument {
+  document: KnowledgeDocument;
+  similarity_score: number;
+  shared_tags: string[];
+  shared_keywords: string[];
+}
+
+export interface RebuildIndexResponse {
+  status: 'started' | 'in_progress' | 'completed' | 'failed';
+  task_id: string;
+  estimated_time_seconds?: number;
+  progress?: {
+    current: number;
+    total: number;
+    percentage: number;
+  };
+}
+
+// 知识库页面状态
+export interface KnowledgePageState {
+  // 统计数据
+  stats: KnowledgeStats | null;
+  statsLoading: boolean;
+  statsError: string | null;
+
+  // 文档列表
+  documents: KnowledgeDocument[];
+  documentsLoading: boolean;
+  documentsError: string | null;
+  documentsPagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+
+  // 搜索
+  searchQuery: string;
+  searchResults: KnowledgeDocument[];
+  searchLoading: boolean;
+  searchError: string | null;
+  searchFilters: {
+    tags: string[];
+    category: string;
+  };
+
+  // 标签
+  tags: TagStats[];
+  tagsLoading: boolean;
+  tagsError: string | null;
+
+  // 上传
+  uploadLoading: boolean;
+  uploadProgress: number;
+  uploadError: string | null;
+
+  // 选中的文档
+  selectedDocument: KnowledgeDocument | null;
+  similarDocuments: SimilarDocument[];
+  similarLoading: boolean;
+
+  // UI状态
+  viewMode: 'grid' | 'list';
+  showUploadModal: boolean;
+  showDocumentDetail: boolean;
 }

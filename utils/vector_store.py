@@ -10,7 +10,34 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import chromadb
 from chromadb.config import Settings
-from sentence_transformers import SentenceTransformer
+# 处理sentence-transformers与huggingface-hub版本兼容性问题
+import sys
+import importlib
+import warnings
+
+# 先尝试导入，捕获可能的导入错误
+try:
+    from sentence_transformers import SentenceTransformer
+    warnings.warn("✅ sentence-transformers导入成功")
+except ImportError as e:
+    if "cannot import name 'cached_download'" in str(e):
+        # 尝试临时修改sys.modules来解决导入问题
+        import huggingface_hub
+        
+        # 如果huggingface-hub版本>=0.20.0，cached_download已被移除
+        if hasattr(huggingface_hub, 'hf_hub_download') and not hasattr(huggingface_hub, 'cached_download'):
+            # 为huggingface_hub模块添加cached_download属性，指向hf_hub_download
+            huggingface_hub.cached_download = huggingface_hub.hf_hub_download
+            warnings.warn("⚠️ 修复sentence-transformers导入问题: cached_download -> hf_hub_download")
+            
+            # 重新导入sentence-transformers
+            if 'sentence_transformers' in sys.modules:
+                del sys.modules['sentence_transformers']
+            from sentence_transformers import SentenceTransformer
+        else:
+            raise
+    else:
+        raise
 import numpy as np
 
 # Add AI partner chat scripts to path

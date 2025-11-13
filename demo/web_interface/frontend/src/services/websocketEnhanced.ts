@@ -46,6 +46,8 @@ class EnhancedWebSocketService {
       'memory_update',
       'error',
       'ping',
+      'message',
+      'message_response',
       'connection_opened',
       'connection_closed',
       'connection_error',
@@ -237,6 +239,8 @@ class EnhancedWebSocketService {
       case 'ping':
         this.handlePing();
         break;
+      case 'message':
+      case 'message_response':
       case 'state_update':
       case 'message_update':
       case 'memory_update':
@@ -249,7 +253,7 @@ class EnhancedWebSocketService {
   }
 
   private handlePing(): void {
-    this.send({ type: 'ping', payload: {} });
+    this.send({ type: 'pong', payload: {} });
   }
 
   private emit(message: WebSocketMessage): void {
@@ -332,8 +336,12 @@ class EnhancedWebSocketService {
 
   private getWebSocketUrl(): string {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const wsUrl = import.meta.env.VITE_WS_URL || `${protocol}//${host}/ws`;
+    // 修复：明确使用后端服务器地址，而不是当前页面地址
+    const host = import.meta.env.VITE_WS_URL ?
+      new URL(import.meta.env.VITE_WS_URL).host :
+      'localhost:8000';
+    const wsUrl = `${protocol}//${host}/ws`;
+    console.log('[WebSocket] Connecting to:', wsUrl);
     return wsUrl;
   }
 

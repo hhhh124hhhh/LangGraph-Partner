@@ -27,25 +27,18 @@ def _write_env(model: str):
     lines = []
     if env_path.exists():
         lines = env_path.read_text(encoding="utf-8").splitlines()
-    found_llm = False
-    found_default = False
+    found_zhipu = False
     new_lines = []
     for line in lines:
-        if line.startswith("LLM_MODEL="):
-            new_lines.append(f"LLM_MODEL={model}")
-            found_llm = True
-        elif line.startswith("DEFAULT_MODEL="):
-            new_lines.append(f"DEFAULT_MODEL={model}")
-            found_default = True
+        if line.startswith("ZHIPU_MODEL="):
+            new_lines.append(f"ZHIPU_MODEL={model}")
+            found_zhipu = True
         else:
             new_lines.append(line)
-    if not found_llm:
-        new_lines.append(f"LLM_MODEL={model}")
-    if not found_default:
-        new_lines.append(f"DEFAULT_MODEL={model}")
+    if not found_zhipu:
+        new_lines.append(f"ZHIPU_MODEL={model}")
     env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
-    os.environ["LLM_MODEL"] = model
-    os.environ["DEFAULT_MODEL"] = model
+    os.environ["ZHIPU_MODEL"] = model
 
 @router.put("/model")
 async def set_model(payload: dict, _: None = Depends(rate_limit_dependency)):
@@ -79,23 +72,20 @@ def _write_env_kv(k: str, v: str):
 
 @router.get("/config")
 async def get_config(_: None = Depends(rate_limit_dependency)):
-    # 检查环境变量中的配置
-    env_zhipu_key = os.environ.get("ZHIPU_API_KEY")
-    env_openai_key = os.environ.get("OPENAI_API_KEY")
-    env_zhipu_url = os.environ.get("ZHIPU_BASE_URL")
-    env_openai_url = os.environ.get("OPENAI_BASE_URL")
-    env_llm_model = os.environ.get("LLM_MODEL")
-    env_default_model = os.environ.get("DEFAULT_MODEL")
-    
+    # 检查环境变量中的配置（使用标准变量）
+    env_api_key = os.environ.get("ZHIPU_API_KEY")
+    env_base_url = os.environ.get("ZHIPU_BASE_URL")
+    env_model = os.environ.get("ZHIPU_MODEL")
+
     # 确定最终值和来源
-    api_key_source = "env" if env_zhipu_key or env_openai_key else "config"
-    api_key = env_zhipu_key or env_openai_key or settings.openai_api_key
-    
-    base_url_source = "env" if env_zhipu_url or env_openai_url else "config"
-    base_url = env_zhipu_url or env_openai_url or settings.openai_base_url
-    
-    model_source = "env" if env_llm_model or env_default_model else "config"
-    model = env_llm_model or env_default_model or settings.llm_model
+    api_key_source = "env" if env_api_key else "config"
+    api_key = env_api_key or settings.openai_api_key
+
+    base_url_source = "env" if env_base_url else "config"
+    base_url = env_base_url or settings.openai_base_url
+
+    model_source = "env" if env_model else "config"
+    model = env_model or settings.llm_model
     
     # API密钥遮掩显示
     masked_api_key = None
@@ -125,14 +115,12 @@ async def set_config(payload: dict, _: None = Depends(rate_limit_dependency)):
     if isinstance(api_key, str) and api_key.strip():
         settings.openai_api_key = api_key.strip()
         _write_env_kv("ZHIPU_API_KEY", settings.openai_api_key)
-        _write_env_kv("OPENAI_API_KEY", settings.openai_api_key)
     if isinstance(base_url, str) and base_url.strip():
         settings.openai_base_url = base_url.strip()
         _write_env_kv("ZHIPU_BASE_URL", settings.openai_base_url)
-        _write_env_kv("OPENAI_BASE_URL", settings.openai_base_url)
     if isinstance(model, str) and model.strip():
         settings.llm_model = model.strip()
-        _write_env(settings.llm_model)
+        _write_env_kv("ZHIPU_MODEL", model)
     return SuccessResponse(success=True, message="updated", data={
         "api_key": settings.openai_api_key,
         "base_url": settings.openai_base_url,
@@ -165,8 +153,8 @@ def _fetch_models(api_key: str, base_url: str):
 
 @router.post("/validate")
 async def validate_and_list_models(payload: dict | None = None, _: None = Depends(rate_limit_dependency)):
-    api_key = (payload or {}).get("api_key") or os.environ.get("ZHIPU_API_KEY") or os.environ.get("OPENAI_API_KEY") or settings.openai_api_key
-    base_url = (payload or {}).get("base_url") or os.environ.get("ZHIPU_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or settings.openai_base_url
+    api_key = (payload or {}).get("api_key") or os.environ.get("ZHIPU_API_KEY") or settings.openai_api_key
+    base_url = (payload or {}).get("base_url") or os.environ.get("ZHIPU_BASE_URL") or settings.openai_base_url
     valid, models = _fetch_models(api_key, base_url)
     source_info = "API动态获取" if valid else "备用模型列表（智谱AI兼容）"
     

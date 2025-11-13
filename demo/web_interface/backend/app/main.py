@@ -5,6 +5,7 @@ AI Partner 智能体 API 服务
 
 import logging
 import sys
+import asyncio
 from pathlib import Path
 from contextlib import asynccontextmanager
 import json
@@ -71,9 +72,11 @@ app = FastAPI(
 )
 
 # 添加 CORS 中间件
+# 在开发环境中允许所有来源，生产环境使用配置的来源
+allowed_origins = ["*"] if settings.api_debug else settings.cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -251,38 +254,155 @@ register_routers()
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("🔌 WebSocket 连接已建立")
+    
+    # 设置心跳定时器
+    heartbeat_task = asyncio.create_task(send_heartbeats(websocket))
+    
     try:
         while True:
-            data = await websocket.receive_text()
+            # 设置接收超时，避免连接挂起
+            try:
+                data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+            except asyncio.TimeoutError:
+                # 超时后发送心跳测试连接
+                logger.debug("⏰ WebSocket 接收超时，发送心跳测试")
+                await websocket.send_json({
+                    "type": "ping",
+                    "payload": {},
+                    "timestamp": datetime.now().isoformat()
+                })
+                continue
+                
+            logger.debug(f"📨 收到 WebSocket 消息: {data}")
+
             try:
                 message = json.loads(data)
                 msg_type = message.get("type")
+                payload = message.get("payload", {})
+
+                logger.debug(f"🔍 消息类型: {msg_type}, 载荷: {payload}")
+
                 if msg_type == "ping":
                     await websocket.send_json({
-                        "type": "ping",
+                        "type": "pong",
                         "payload": {},
                         "timestamp": datetime.now().isoformat()
                     })
-                elif msg_type in ("subscribe", "unsubscribe"):
+                    logger.debug("💓 响应 ping 消息")
+                    continue  # 跳过后续处理，直接处理下一条消息
+
+                elif msg_type == "message":
+                    # 处理聊天消息
+                    content = payload.get("content", "")
+                    session_id = payload.get("session_id", "")
+                    logger.info(f"💬 收到聊天消息 [会话: {session_id}]: {content[:50]}...")
+
+                    # 模拟AI响应（实际项目中应该调用AI服务）
+                    response_text = f"收到您的消息：{content}"
+
                     await websocket.send_json({
-                        "type": "message_update",
-                        "payload": {"status": "ok"},
+                        "type": "message_response",
+                        "payload": {
+                            "content": response_text,
+                            "session_id": session_id,
+                            "timestamp": datetime.now().isoformat()
+                        },
                         "timestamp": datetime.now().isoformat()
                     })
-            except Exception as e:
-                logger.error(f"WebSocket 消息处理失败: {e}")
+                    logger.info(f"📤 发送响应: {response_text[:50]}...")
+
+                elif msg_type == "pong":
+                    # 心跳响应，无需特殊处理
+                    logger.debug(f"💓 收到Pong响应")
+
+                elif msg_type in ("subscribe", "unsubscribe"):
+                    session_id = payload.get("session_id", "")
+                    logger.info(f"📢 {msg_type.title()} 请求: 会话 {session_id}")
+
+                    await websocket.send_json({
+                        "type": "message_update",
+                        "payload": {
+                            "status": "ok",
+                            "session_id": session_id,
+                            "action": msg_type
+                        },
+                        "timestamp": datetime.now().isoformat()
+                    })
+
+                else:
+                    logger.warning(f"⚠️ 未知消息类型: {msg_type}")
+                    await websocket.send_json({
+                        "type": "error",
+                        "payload": {
+                            "error": f"Unknown message type: {msg_type}",
+                            "received_type": msg_type
+                        },
+                        "timestamp": datetime.now().isoformat()
+                    })
+
+            except json.JSONDecodeError as e:
+                logger.error(f"❌ JSON 解析错误: {e}")
                 await websocket.send_json({
                     "type": "error",
-                    "payload": {"error": "invalid_message"},
+                    "payload": {"error": "invalid_json", "details": str(e)},
                     "timestamp": datetime.now().isoformat()
                 })
-    except WebSocketDisconnect:
-        logger.info("🔌 WebSocket 连接已关闭")
+
+            except Exception as e:
+                logger.error(f"❌ WebSocket 消息处理失败: {e}", exc_info=True)
+                await websocket.send_json({
+                    "type": "error",
+                    "payload": {"error": "message_processing_failed", "details": str(e)},
+                    "timestamp": datetime.now().isoformat()
+                })
+
+    except WebSocketDisconnect as e:
+        logger.info(f"🔌 WebSocket 连接已关闭 (代码: {e.code}, 原因: {e.reason})")
+    except Exception as e:
+        logger.error(f"❌ WebSocket 连接异常: {e}", exc_info=True)
+    finally:
+        # 清理心跳任务
+        heartbeat_task.cancel()
+        try:
+            await heartbeat_task
+        except asyncio.CancelledError:
+            pass
+
+
+async def send_heartbeats(websocket: WebSocket):
+    """定期发送心跳消息保持连接"""
+    while True:
+        await asyncio.sleep(30)
+        try:
+            await websocket.send_json({
+                "type": "ping",
+                "payload": {},
+                "timestamp": datetime.now().isoformat()
+            })
+            logger.debug("💓 发送心跳消息")
+        except Exception as e:
+            logger.debug(f"❌ 发送心跳失败: {e}")
+            break
 
 # 开发服务器启动
 if __name__ == "__main__":
     logger.info("🚀 启动开发服务器...")
     logger.info(f"📍 服务地址: {settings.get_api_url()}")
+    
+    # 启动 uvicorn 服务器，配置 WebSocket 优化参数
+    uvicorn.run(
+        "app.main:app",
+        host=settings.api_host,
+        port=settings.api_port,
+        reload=settings.api_debug,
+        log_level=settings.log_level.lower(),
+        # WebSocket 优化配置
+        ws_ping_interval=25.0,  # WebSocket ping 间隔
+        ws_ping_timeout=5.0,    # WebSocket ping 超时
+        ws_max_size=10485760,   # WebSocket 最大消息大小 (10MB)
+        http="h11",            # 使用 h11 HTTP 实现
+        workers=1 if settings.api_debug else 2  # 开发环境单进程，生产环境多进程
+    )
     logger.info(f"📚 API文档: {settings.get_api_url()}/docs")
 
     uvicorn.run(

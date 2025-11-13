@@ -3,13 +3,21 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from '@stores/index';
 import { useWebSocketManager } from '@hooks/useWebSocketManager';
 
-// 页面组件（稍后创建）
+// 页面组件
+import ChatPage from '@pages/ChatPage';
+import SettingsPage from '@pages/SettingsPage';
+// 新页面组件（稍后创建）
+import KnowledgePage from '@pages/KnowledgePage';
+import PersonaPage from '@pages/PersonaPage';
+import MemoryPage from '@pages/MemoryPage';
+import AnalyticsPage from '@pages/AnalyticsPage';
+import AdvancedPage from '@pages/AdvancedPage';
+import HelpPage from '@pages/HelpPage';
+// 保留的旧页面（用于兼容）
 import HomePage from '@pages/HomePage';
 import DemoPage from '@pages/DemoPage';
-import ChatPage from '@pages/ChatPage';
 import VisualizationPage from '@pages/VisualizationPage';
 import ComparisonPage from '@pages/ComparisonPage';
-import SettingsPage from '@pages/SettingsPage';
 
 // 布局组件
 import AppLayout from '@components/Layout/AppLayout';
@@ -156,19 +164,26 @@ const App: React.FC = () => {
 
         <AppLayout>
           <Routes>
-            {/* 默认重定向到首页 */}
-            <Route path="/" element={<Navigate to="/home" replace />} />
+            {/* 默认重定向到智能对话页面 */}
+            <Route path="/" element={<Navigate to="/chat" replace />} />
 
-            {/* 主要页面路由 */}
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/demo" element={<DemoPage />} />
+            {/* 新的用户导向页面路由 */}
             <Route path="/chat" element={<ChatPage />} />
-            <Route path="/visualization" element={<VisualizationPage />} />
-            <Route path="/comparison" element={<ComparisonPage />} />
+            <Route path="/knowledge" element={<KnowledgePage />} />
+            <Route path="/persona" element={<PersonaPage />} />
+            <Route path="/memory" element={<MemoryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
 
+            {/* 辅助功能页面路由 */}
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/advanced" element={<AdvancedPage />} />
+            <Route path="/help" element={<HelpPage />} />
+
             {/* 兼容旧路由 */}
-            <Route path="/" element={<HomePage />} />
+            <Route path="/home" element={<Navigate to="/chat" replace />} />
+            <Route path="/demo" element={<Navigate to="/advanced" replace />} />
+            <Route path="/visualization" element={<Navigate to="/analytics" replace />} />
+            <Route path="/comparison" element={<Navigate to="/advanced" replace />} />
 
             {/* 404 页面 */}
             <Route

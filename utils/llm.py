@@ -8,28 +8,27 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import json
 
-# 加载环境变量，尝试加载.env文件和.env.local文件
-load_dotenv('.env')
-load_dotenv('.env.local')
+# 加载环境变量，统一从 demo/.env 加载
+from pathlib import Path
+project_root = Path(__file__).parent.parent
+env_path = project_root / "demo" / ".env"
+load_dotenv(env_path)
 
 # 打印环境变量加载状态
-print(f"环境变量加载状态:")
+print(f"环境变量加载状态 (从 {env_path}):")
 print(f"ZHIPU_API_KEY: {'已设置' if os.getenv('ZHIPU_API_KEY') else '未设置'}")
+print(f"ZHIPU_BASE_URL: {'已设置' if os.getenv('ZHIPU_BASE_URL') else '未设置'}")
 print(f"ZHIPU_MODEL: {'已设置 - ' + os.getenv('ZHIPU_MODEL') if os.getenv('ZHIPU_MODEL') else '未设置 (使用默认值)'}")
-print(f"AI_CLAUDE_API_KEY: {'已设置' if os.getenv('AI_CLAUDE_API_KEY') else '未设置'}")
-print(f"AI_CLAUDE_BASE_URL: {'已设置' if os.getenv('AI_CLAUDE_BASE_URL') else '未设置'}")
-print(f"OPENAI_API_KEY: {'已设置' if os.getenv('OPENAI_API_KEY') else '未设置'}")
-print(f"OPENAI_BASE_URL: {'已设置' if os.getenv('OPENAI_BASE_URL') else '未设置'}")
 
 class CustomLLM:
     """自定义LLM类，直接使用OpenAI客户端调用API"""
-    def __init__(self, model="glm-3-turbo", temperature=0.7):
+    def __init__(self, model="glm-4-flash", temperature=0.7):
         # 从环境变量获取配置
         self.api_key = os.getenv('ZHIPU_API_KEY')
-        # 设置完整的API URL路径
-        self.base_url = "https://open.bigmodel.cn/api/paas/v4"
+        # 从环境变量读取基础URL，否则使用默认值
+        self.base_url = os.getenv('ZHIPU_BASE_URL', "https://open.bigmodel.cn/api/paas/v4")
         # 优先从环境变量读取模型名称，否则使用传入的参数或默认值
-        self.model_name = os.getenv('ZHIPU_MODEL', model)  # 从环境变量读取模型
+        self.model_name = os.getenv('ZHIPU_MODEL', model)
         self.temperature = temperature
         
         print(f"创建CustomLLM实例:")

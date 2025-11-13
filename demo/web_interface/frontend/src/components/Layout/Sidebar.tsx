@@ -1,14 +1,13 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Home,
-  Play,
-  MessageSquare,
-  BarChart3,
-  Zap,
+  MessageCircle,
+  Database,
+  Sparkles,
+  Clock,
   Settings,
-  Users,
-  Book,
+  BarChart3,
+  Wrench,
   HelpCircle,
   ChevronDown,
   ChevronRight,
@@ -24,61 +23,55 @@ const Sidebar: React.FC = () => {
 
   const navigation = [
     {
-      name: '首页概览',
-      href: '/home',
-      icon: Home,
-      description: '查看系统概览和快速入口',
-    },
-    {
-      name: '功能演示',
-      href: '/demo',
-      icon: Play,
-      description: '体验AI Partner核心功能',
-    },
-    {
       name: '智能对话',
       href: '/chat',
-      icon: MessageSquare,
-      description: '与AI进行个性化对话',
+      icon: MessageCircle,
+      description: '与AI伙伴开始个性化对话',
     },
     {
-      name: '数据可视化',
-      href: '/visualization',
-      icon: BarChart3,
-      description: '查看LangGraph状态流程',
+      name: '知识库',
+      href: '/knowledge',
+      icon: Database,
+      description: '管理笔记和知识内容',
     },
     {
-      name: '对比分析',
-      href: '/comparison',
-      icon: Zap,
-      description: 'LangGraph vs Coze技术对比',
+      name: '画像配置',
+      href: '/persona',
+      icon: Sparkles,
+      description: '个性化AI伙伴设置',
     },
     {
-      name: '系统设置',
+      name: '记忆中心',
+      href: '/memory',
+      icon: Clock,
+      description: '查看和管理对话记忆',
+    },
+    {
+      name: '设置',
       href: '/settings',
       icon: Settings,
-      description: '配置系统参数和偏好',
+      description: '系统配置和偏好设置',
     },
   ];
 
   const secondaryNavigation = [
     {
-      name: '用户社区',
-      href: '/community',
-      icon: Users,
-      description: '与其他用户交流',
+      name: '使用分析',
+      href: '/analytics',
+      icon: BarChart3,
+      description: '查看使用统计和分析',
     },
     {
-      name: '使用文档',
-      href: '/docs',
-      icon: Book,
-      description: '查看详细文档',
+      name: '高级功能',
+      href: '/advanced',
+      icon: Wrench,
+      description: '专业功能和技术设置',
     },
     {
-      name: '帮助中心',
+      name: '使用帮助',
       href: '/help',
       icon: HelpCircle,
-      description: '获取帮助和支持',
+      description: '获取使用指南和支持',
     },
   ];
 
@@ -116,7 +109,7 @@ const Sidebar: React.FC = () => {
                   AI Partner
                 </h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  LangGraph 智能体平台
+                  个性化AI对话伙伴
                 </p>
               </div>
             </div>
@@ -139,7 +132,7 @@ const Sidebar: React.FC = () => {
           <div className="p-4">
             {sidebar_open && (
               <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
-                主要功能
+                核心功能
               </h3>
             )}
 

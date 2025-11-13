@@ -22,8 +22,8 @@
 
 ```
 backend/
-├── app/
-│   ├── api/                 # API路由模块
+├── app/                    # 应用主目录
+│   ├── api/                # API路由模块
 │   │   ├── chat.py         # 对话相关API
 │   │   ├── persona.py      # 画像管理API
 │   │   ├── memory.py       # 记忆管理API
@@ -45,46 +45,59 @@ backend/
 │   │   └── ai_partner.py   # AI Partner集成
 │   └── main.py             # 应用入口
 ├── requirements.txt        # Python依赖
-├── .env.example           # 环境变量示例
-└── README.md              # 项目说明
+├── requirements_simplified.txt # 简化版依赖（可选）
+├── start_ai_partner.py     # 统一启动脚本（推荐使用）
+├── README.md               # 项目说明
+└── ...其他配置文件
 ```
 
 ## 快速开始
 
 ### 1. 环境准备
 
-```bash
-# 创建虚拟环境
-python -m venv venv
-
-# 激活虚拟环境
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-
-# 安装依赖
-pip install -r requirements.txt
-```
+项目提供了统一的启动脚本 `start_ai_partner.py`，它会自动处理虚拟环境创建、依赖安装和环境配置。
 
 ### 2. 配置环境
 
-```bash
-# 复制环境变量配置
-cp .env.example .env
+在 demo 根目录创建 `.env` 文件（如果不存在），并设置必要的环境变量：
 
-# 编辑 .env 文件，设置必要的环境变量
-# OPENAI_API_KEY=your_zhipu_api_key_here
+```bash
+# 智谱AI API密钥（必填）
+OPENAI_API_KEY=your_zhipu_api_key_here
 ```
 
 ### 3. 启动服务
 
-```bash
-# 开发模式启动
-python -m app.main
+使用统一启动脚本启动服务：
 
-# 或使用uvicorn
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```bash
+# 开发模式启动（推荐）
+python start_ai_partner.py dev
+
+# 生产模式启动
+python start_ai_partner.py prod
+
+# 仅安装依赖
+python start_ai_partner.py install
+
+# 检查服务健康状态
+python start_ai_partner.py health
+
+# 初始化项目（创建目录、安装依赖）
+python start_ai_partner.py setup
+```
+
+#### 启动脚本参数说明
+
+```bash
+# 跳过依赖安装
+python start_ai_partner.py dev --skip-install
+
+# 强制重新加载环境变量
+python start_ai_partner.py dev --force-reload
+
+# 指定虚拟环境路径
+python start_ai_partner.py dev --venv-path /path/to/venv
 ```
 
 ### 4. 访问服务
@@ -257,6 +270,14 @@ docker run -p 8000:8000 -v ./data:/app/data ai-partner-api
 
 ### 生产环境配置
 
+使用统一启动脚本的生产模式：
+
+```bash
+python start_ai_partner.py prod
+```
+
+或者手动使用gunicorn部署：
+
 ```bash
 # 使用gunicorn部署
 pip install gunicorn
@@ -301,10 +322,10 @@ pytest --cov=app tests/
 
 ### 调试
 
+使用统一启动脚本的开发模式自动启用调试功能：
+
 ```bash
-# 启用调试模式
-export API_DEBUG=true
-python -m app.main
+python start_ai_partner.py dev
 ```
 
 ## 故障排除

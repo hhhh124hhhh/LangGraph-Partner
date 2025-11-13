@@ -16,6 +16,10 @@ export interface UseWebSocketManagerOptions {
   onMessage?: (message: any) => void;
 }
 
+export interface UseChatWebSocketManagerOptions extends UseWebSocketManagerOptions {
+  // 聊天特定的选项
+}
+
 export const useWebSocketManager = (options: UseWebSocketManagerOptions = {}) => {
   const {
     autoConnect = true,
@@ -198,18 +202,21 @@ export const useWebSocketManager = (options: UseWebSocketManagerOptions = {}) =>
       setAvailableFeatures(webSocketManager.getAvailableFeatures());
     });
 
-    // 通用消息处理器
-    const unsubscribeMessageUpdate = webSocketManager.on('message_update', (message) => {
-      if (onMessage) {
-        onMessage(message);
-      }
+    // 监听所有可能的消息类型
+    const messageTypes = ['message_response', 'message_update', 'state_update', 'memory_update', 'error'];
+    const unsubscribeFunctions = messageTypes.map(type => {
+      return webSocketManager.on(type, (message) => {
+        if (onMessage) {
+          onMessage(message);
+        }
+      });
     });
 
     return () => {
       unsubscribeConnectionOpened();
       unsubscribeConnectionClosed();
       unsubscribeConnectionError();
-      unsubscribeMessageUpdate();
+      unsubscribeFunctions.forEach(unsubscribe => unsubscribe());
     };
   }, [onMessage]);
 
@@ -264,7 +271,7 @@ export const useWebSocketManager = (options: UseWebSocketManagerOptions = {}) =>
 };
 
 // 专门用于聊天的WebSocket Hook
-export const useChatWebSocketManager = (sessionId: string | null) => {
+export const useChatWebSocketManager = (sessionId: string | null, options: UseChatWebSocketManagerOptions = {}) => {
   const {
     connect,
     disconnect,
@@ -276,7 +283,8 @@ export const useChatWebSocketManager = (sessionId: string | null) => {
     availableFeatures
   } = useWebSocketManager({
     autoConnect: !!sessionId,
-    showConnectionNotifications: true
+    showConnectionNotifications: true,
+    ...options
   });
 
   // 当sessionId从null变为有效值时，自动连接
@@ -313,7 +321,7 @@ export const useChatWebSocketManager = (sessionId: string | null) => {
   // 发送聊天消息
   const sendChatMessage = useCallback((content: string, attachments?: any[]) => {
     return send({
-      type: 'chat_message',
+      type: 'message',
       payload: {
         content,
         attachments: attachments || [],
@@ -343,7 +351,9 @@ export const useChatWebSocketManager = (sessionId: string | null) => {
     connectionMode,
     sendChatMessage,
     availableFeatures,
-    canSendMessages: isConnected && (availableFeatures.includes('实时双向通信') || availableFeatures.includes('模拟数据更新'))
+    canSendMessages: isConnected && (availableFeatures.includes('实时双向通信') || availableFeatures.includes('模拟数据更新')),
+    on,
+    off
   };
 };
 

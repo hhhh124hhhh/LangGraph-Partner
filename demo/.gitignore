@@ -3,6 +3,7 @@ venv/
 env/
 env3/
 ENV/
+demo/.venv
 
 # 前端依赖
 web_interface/frontend/node_modules/

@@ -10,11 +10,19 @@ import {
   DemoScenario,
   ComparisonRequest,
   ComparisonResponse,
-  BaseResponse
+  BaseResponse,
+  KnowledgeStats,
+  KnowledgeDocument,
+  TagStats,
+  DocumentUploadRequest,
+  DocumentUploadResponse,
+  SimilarDocument,
+  RebuildIndexResponse
 } from '@typesdef/index';
 
 class ApiService {
   private client: AxiosInstance;
+  public readonly defaultModel: string;
 
   constructor() {
     this.client = axios.create({
@@ -24,6 +32,9 @@ class ApiService {
         'Content-Type': 'application/json',
       },
     });
+
+    // 从环境变量获取默认模型
+    this.defaultModel = import.meta.env.VITE_DEFAULT_MODEL || 'glm-4-flash';
 
     // 请求拦截器
     this.client.interceptors.request.use(
@@ -307,6 +318,136 @@ class ApiService {
   // 检查请求是否被取消
   isCancel(error: any): boolean {
     return axios.isCancel(error);
+  }
+
+  // ============ 知识库管理API ============
+
+  // 获取知识库统计信息
+  async getKnowledgeStats(): Promise<KnowledgeStats> {
+    const response = await this.client.get<BaseResponse<KnowledgeStats>>('/knowledge/stats');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to get knowledge stats');
+    }
+    return response.data.data;
+  }
+
+  // 语义搜索
+  async searchKnowledgeDocuments(request: KnowledgeSearchRequest): Promise<KnowledgeSearchResponse> {
+    const response = await this.client.post<BaseResponse<KnowledgeSearchResponse>>('/knowledge/search', request);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to search documents');
+    }
+    return response.data.data;
+  }
+
+  // 获取文档列表
+  async getKnowledgeDocuments(params?: {
+    page?: number;
+    page_size?: number;
+    tags?: string[];
+    category?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+  }): Promise<{
+    documents: KnowledgeDocument[];
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  }> {
+    const response = await this.client.get<BaseResponse<{
+      documents: KnowledgeDocument[];
+      total: number;
+      page: number;
+      page_size: number;
+      total_pages: number;
+    }>>('/knowledge/documents', { params });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to get documents');
+    }
+    return response.data.data;
+  }
+
+  // 获取文档详情
+  async getKnowledgeDocument(docId: string): Promise<KnowledgeDocument> {
+    const response = await this.client.get<BaseResponse<KnowledgeDocument>>(`/knowledge/documents/${docId}`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to get document details');
+    }
+    return response.data.data;
+  }
+
+  // 上传文档
+  async uploadDocument(request: DocumentUploadRequest, onProgress?: (progress: number) => void): Promise<DocumentUploadResponse> {
+    const formData = new FormData();
+    formData.append('file', request.file);
+
+    if (request.title) {
+      formData.append('title', request.title);
+    }
+    if (request.description) {
+      formData.append('description', request.description);
+    }
+    if (request.category) {
+      formData.append('category', request.category);
+    }
+    if (request.tags && request.tags.length > 0) {
+      formData.append('tags', JSON.stringify(request.tags));
+    }
+
+    const response = await this.client.post<BaseResponse<DocumentUploadResponse>>('/knowledge/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(progress);
+        }
+      },
+    });
+
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to upload document');
+    }
+    return response.data.data;
+  }
+
+  // 删除文档
+  async deleteKnowledgeDocument(docId: string): Promise<void> {
+    const response = await this.client.delete<BaseResponse>(`/knowledge/documents/${docId}`);
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to delete document');
+    }
+  }
+
+  // 获取标签统计
+  async getKnowledgeTags(): Promise<TagStats[]> {
+    const response = await this.client.get<BaseResponse<TagStats[]>>('/knowledge/tags');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to get tags');
+    }
+    return response.data.data;
+  }
+
+  // 重建索引
+  async rebuildKnowledgeIndex(): Promise<RebuildIndexResponse> {
+    const response = await this.client.post<BaseResponse<RebuildIndexResponse>>('/knowledge/rebuild');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to rebuild index');
+    }
+    return response.data.data;
+  }
+
+  // 获取相似文档
+  async getSimilarDocuments(docId: string, limit?: number): Promise<SimilarDocument[]> {
+    const response = await this.client.get<BaseResponse<SimilarDocument[]>>(`/knowledge/similar/${docId}`, {
+      params: { limit }
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to get similar documents');
+    }
+    return response.data.data;
   }
 }
 
