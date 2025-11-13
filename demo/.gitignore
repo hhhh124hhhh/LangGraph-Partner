@@ -22,6 +22,7 @@ web_interface/frontend/.vite/
 .env.development
 .env.production
 .env.*
+!.env.example
 
 # 日志文件
 *.log
