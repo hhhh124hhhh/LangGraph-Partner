@@ -307,7 +307,7 @@ export interface NotificationAction {
 
 // 实时更新相关
 export interface WebSocketMessage {
-  type: 'state_update' | 'message_update' | 'memory_update' | 'error' | 'ping' | 'message' | 'message_response' | 'connection_error' | 'connection_opened' | 'connection_closed' | 'connection_quality_update';
+  type: 'state_update' | 'message_update' | 'memory_update' | 'error' | 'ping' | 'pong' | 'message' | 'message_response' | 'connection_error' | 'connection_opened' | 'connection_closed' | 'connection_quality_update';
   payload: any;
   timestamp: string;
   session_id?: string;

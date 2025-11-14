@@ -253,6 +253,7 @@ register_routers()
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    print("🔌 WebSocket 连接已建立")
     logger.info("🔌 WebSocket 连接已建立")
     
     # 设置心跳定时器
@@ -295,6 +296,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     # 处理聊天消息
                     content = payload.get("content", "")
                     session_id = payload.get("session_id", "")
+                    print(f"💬 收到聊天消息 [会话: {session_id}]: {content[:50]}...")
                     logger.info(f"💬 收到聊天消息 [会话: {session_id}]: {content[:50]}...")
 
                     # 模拟AI响应（实际项目中应该调用AI服务）
@@ -309,6 +311,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         },
                         "timestamp": datetime.now().isoformat()
                     })
+                    print(f"📤 发送响应: {response_text[:50]}...")
                     logger.info(f"📤 发送响应: {response_text[:50]}...")
 
                 elif msg_type == "pong":
