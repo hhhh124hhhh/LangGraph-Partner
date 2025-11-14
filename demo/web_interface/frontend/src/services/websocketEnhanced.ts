@@ -79,6 +79,7 @@ class EnhancedWebSocketService {
 
   async connect(url?: string): Promise<void> {
     if (this._isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+      console.log('[WebSocket] Already connecting or connected, skipping...');
       return Promise.resolve();
     }
 
@@ -93,13 +94,20 @@ class EnhancedWebSocketService {
 
     const wsUrl = url || this.getWebSocketUrl();
     console.log(`[WebSocket] ${isReconnect ? 'Reconnecting' : 'Connecting'} to:`, wsUrl);
-
+    console.log('[WebSocket] Connection state before new WebSocket:', this._isConnecting);
+    
     return new Promise((resolve, reject) => {
       try {
         this.ws = new WebSocket(wsUrl);
+        console.log('[WebSocket] WebSocket instance created:', !!this.ws);
+        
+        if (this.ws) {
+          console.log('[WebSocket] WebSocket readyState:', this.ws.readyState);
+        }
 
         const connectionTimer = setTimeout(() => {
           if (this._isConnecting) {
+            console.log('[WebSocket] Connection timeout, cleaning up...');
             connectionManager.onConnectionFailure();
             this.cleanup();
             reject(new Error('Connection timeout'));
@@ -170,7 +178,7 @@ class EnhancedWebSocketService {
 
         this.ws.onerror = (error) => {
           clearTimeout(connectionTimer);
-          console.error('[WebSocket] Error:', error);
+          console.warn('[WebSocket] Error:', error);
           this._isConnecting = false;
           connectionManager.onConnectionFailure();
 
@@ -344,6 +352,12 @@ class EnhancedWebSocketService {
   }
 
   private getWebSocketUrl(): string {
+    // 调试环境变量
+    console.log('[WebSocket] Environment variables:', {
+      VITE_WS_URL: import.meta.env.VITE_WS_URL,
+      NODE_ENV: import.meta.env.MODE
+    });
+    
     // 如果环境变量中有完整的WebSocket URL，直接使用
     if (import.meta.env.VITE_WS_URL) {
       const wsUrl = import.meta.env.VITE_WS_URL;

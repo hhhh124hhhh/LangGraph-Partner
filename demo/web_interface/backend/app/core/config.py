@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     api_reload: bool = Field(default=True, description="自动重载", alias="API_RELOAD")
 
     # CORS 配置 - 使用ClassVar避免Pydantic解析
-    cors_origins: ClassVar[List[str]] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3004", "http://127.0.0.1:3004"]
+    cors_origins: ClassVar[List[str]] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001", "http://localhost:3004", "http://127.0.0.1:3004"]
 
     # 智谱AI API 配置
     openai_api_key: str = Field(default="", description="智谱AI API密钥", alias="OPENAI_API_KEY")

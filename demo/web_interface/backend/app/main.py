@@ -391,6 +391,7 @@ async def send_heartbeats(websocket: WebSocket):
 if __name__ == "__main__":
     logger.info("🚀 启动开发服务器...")
     logger.info(f"📍 服务地址: {settings.get_api_url()}")
+    logger.info(f"📚 API文档: {settings.get_api_url()}/docs")
     
     # 启动 uvicorn 服务器，配置 WebSocket 优化参数
     uvicorn.run(
@@ -405,13 +406,4 @@ if __name__ == "__main__":
         ws_max_size=10485760,   # WebSocket 最大消息大小 (10MB)
         http="h11",            # 使用 h11 HTTP 实现
         workers=1 if settings.api_debug else 2  # 开发环境单进程，生产环境多进程
-    )
-    logger.info(f"📚 API文档: {settings.get_api_url()}/docs")
-
-    uvicorn.run(
-        "app.main:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=settings.api_reload,
-        log_level=settings.log_level.lower()
     )

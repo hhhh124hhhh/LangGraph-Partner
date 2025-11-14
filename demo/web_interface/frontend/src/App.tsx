@@ -42,6 +42,36 @@ const App: React.FC = () => {
     showConnectionNotifications: true
   });
 
+  // Simple WebSocket test function
+  const testWebSocketConnection = () => {
+    console.log('Testing WebSocket connection...');
+    const ws = new WebSocket('/ws');
+    
+    ws.onopen = () => {
+      console.log('✓ WebSocket connection opened');
+      ws.send(JSON.stringify({ type: 'ping', payload: {} }));
+    };
+    
+    ws.onmessage = (event) => {
+      console.log('✓ Received message:', event.data);
+    };
+    
+    ws.onclose = (event) => {
+      console.log('✗ WebSocket connection closed:', event.code, event.reason);
+    };
+    
+    ws.onerror = (error) => {
+      console.error('✗ WebSocket error:', error);
+    };
+    
+    setTimeout(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+        console.log('WebSocket connection closed after test');
+      }
+    }, 5000);
+  };
+
   // 初始化应用
   useEffect(() => {
     // 检查主题设置
@@ -160,6 +190,12 @@ const App: React.FC = () => {
           <span className="text-xs text-gray-600 dark:text-gray-400">
             {isConnected ? '已连接' : '连接中...'}
           </span>
+          <button
+            onClick={testWebSocketConnection}
+            className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition-colors"
+          >
+            测试WebSocket
+          </button>
         </div>
 
         <AppLayout>

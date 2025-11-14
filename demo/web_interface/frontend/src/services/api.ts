@@ -88,87 +88,35 @@ class ApiService {
 
   // 对话相关API
   async sendMessage(request: ChatRequest, onChunk?: (chunk: string, metadata?: any) => void): Promise<ChatResponse> {
-    if (onChunk) {
-      // 流式输出处理
-      const response = await this.client.post('/chat/', request, {
-        responseType: 'stream',
-        headers: {
-          'Accept': 'text/event-stream'
-        }
-      });
-
-      return new Promise((resolve, reject) => {
-        const stream = response.data;
-        let dataBuffer = '';
-        let finalResponse: ChatResponse | null = null;
-        let fullContent = '';
-
-        stream.on('data', (chunk: Buffer) => {
-          const chunkString = chunk.toString('utf-8');
-          dataBuffer += chunkString;
-          
-          // 处理SSE格式的数据流
-          const events = dataBuffer.split('\n\n');
-          dataBuffer = events.pop() || '';
-          
-          for (const event of events) {
-            if (!event.trim()) continue;
-            
-            const lines = event.split('\n');
-            let data = '';
-            let eventType = 'message';
-            
-            for (const line of lines) {
-              if (line.startsWith('event:')) {
-                eventType = line.slice(6).trim();
-              } else if (line.startsWith('data:')) {
-                data += line.slice(5).trim();
-              }
-            }
-            
-            if (!data) continue;
-            
-            try {
-              const parsedData = JSON.parse(data);
-              
-              if (eventType === 'message' && parsedData.type === 'stream') {
-                // 处理流式内容
-                const chunkContent = parsedData.content || '';
-                fullContent += chunkContent;
-                onChunk(chunkContent);
-              } else if (eventType === 'complete' || parsedData.type === 'complete') {
-                // 处理完整响应
-                finalResponse = {
-                  ...parsedData,
-                  message: fullContent || parsedData.message
-                };
-              }
-            } catch (error) {
-              console.error('Error parsing SSE data:', error);
-            }
-          }
-        });
-
-        stream.on('end', () => {
-          if (finalResponse) {
-            resolve(finalResponse);
-          } else {
-            reject(new Error('No complete response received'));
-          }
-        });
-
-        stream.on('error', (error: any) => {
-          reject(error);
-        });
-      });
-    } else {
-      // 非流式输出处理（保持原有逻辑）
-      const response = await this.client.post<BaseResponse<ChatResponse>>('/chat/', request);
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.error || 'Failed to send message');
-      }
-      return response.data.data;
+    const resp = await this.client.post('/chat/', request);
+    const payload = resp.data as BaseResponse<any>;
+    if (!payload.success || !payload.data) {
+      throw new Error(payload.error || 'Failed to send message');
     }
+    const data = payload.data;
+    const messageText: string = data.message || data.response || data.ai_response || '';
+    if (onChunk && messageText) {
+      onChunk(messageText, data.metadata);
+    }
+    const mapped: ChatResponse = {
+      message: messageText,
+      session_id: data.session_id,
+      persona_response: {
+        applied_traits: [],
+        confidence_score: 0,
+        personality_markers: []
+      },
+      state_info: {
+        current_state: 'completed',
+        next_states: [],
+        execution_path: []
+      },
+      usage: {
+        tokens_used: data.metadata?.tokens_used ?? 0,
+        response_time_ms: Math.round((data.processing_time ?? 0) * 1000)
+      }
+    };
+    return mapped;
   }
 
   async getChatState(sessionId: string): Promise<LangGraphState> {

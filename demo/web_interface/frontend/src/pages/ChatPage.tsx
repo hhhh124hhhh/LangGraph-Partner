@@ -97,23 +97,21 @@ const ChatPage: React.FC = () => {
   // 使用更新后的useChatWebSocketManager，添加消息响应监听
   const { isConnected, connectionMode, sendChatMessage, availableFeatures, canSendMessages } = useChatWebSocketManager(currentSessionId, {
     onMessage: (message) => {
-      if (message.type === 'message_response') {
-        logger.info('收到WebSocket消息响应:', message.payload);
+      if (message.type === 'message_response' || message.type === 'message_update') {
+        logger.info('收到消息响应:', message.payload);
         setMessages(prev => {
-          // 找到最后一条用户消息
           const lastUserMessageIndex = [...prev].reverse().findIndex(msg => msg.role === 'user' && msg.status === 'sent');
           if (lastUserMessageIndex === -1) return prev;
-          
           const actualIndex = prev.length - 1 - lastUserMessageIndex;
           const aiMessageId = `ai_${Date.now()}`;
-          
-          // 在用户消息后添加AI响应
+          const content = message.payload.content || message.payload?.message?.content || '';
+          const sessionId = message.payload.session_id || currentSessionId;
           return [...prev.slice(0, actualIndex + 1), {
             id: aiMessageId,
             role: 'assistant',
-            content: message.payload.content,
+            content,
             timestamp: message.payload.timestamp || new Date().toISOString(),
-            session_id: message.payload.session_id,
+            session_id: sessionId,
             status: 'completed'
           }];
         });
@@ -259,6 +257,7 @@ const ChatPage: React.FC = () => {
           msg.id === aiMessageId
             ? {
                 ...msg,
+                content: response.message || msg.content,
                 status: 'completed',
                 metadata: {
                   ...msg.metadata,

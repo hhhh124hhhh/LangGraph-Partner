@@ -289,11 +289,18 @@ export const useChatWebSocketManager = (sessionId: string | null, options: UseCh
 
   // 当sessionId从null变为有效值时，自动连接
   useEffect(() => {
+    let t: any;
     if (sessionId && !isConnected) {
-      connect();
+      t = setTimeout(() => {
+        connect();
+      }, 500);
     } else if (!sessionId && isConnected) {
       disconnect();
     }
+
+    return () => {
+      if (t) clearTimeout(t);
+    };
   }, [sessionId, isConnected, connect, disconnect]);
 
   // 订阅会话

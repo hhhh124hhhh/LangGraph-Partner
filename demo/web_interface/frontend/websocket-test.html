@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="output"></div>
+    <script>
+        const output = document.getElementById('output');
+        // WebSocket URL配置 - 使用相对路径通过Vite代理
+        const url = '/ws';
+        
+        function log(message) {
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ': ' + message;
+            output.appendChild(div);
+            console.log(message);
+        }
+        
+        log('Attempting to connect to: ' + url);
+        
+        const ws = new WebSocket(url);
+        
+        ws.onopen = () => {
+            log('✓ WebSocket connection opened');
+            log('Sending ping...');
+            ws.send(JSON.stringify({ type: 'ping', payload: {} }));
+        };
+        
+        ws.onmessage = (event) => {
+            log('✓ Received message: ' + event.data);
+        };
+        
+        ws.onclose = (event) => {
+            log('✗ WebSocket connection closed: ' + event.code + ' - ' + event.reason);
+        };
+        
+        ws.onerror = (error) => {
+            log('✗ WebSocket error: ' + error);
+        };
+        
+        // 测试发送消息
+        setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                log('Sending test message...');
+                ws.send(JSON.stringify({ 
+                    type: 'message', 
+                    payload: { content: 'Hello from test', session_id: 'test-session' } 
+                }));
+            } else {
+                log('WebSocket not open, cannot send test message');
+            }
+        }, 2000);
+        
+        // 5秒后关闭连接
+        setTimeout(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                log('Closing connection...');
+                ws.close();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

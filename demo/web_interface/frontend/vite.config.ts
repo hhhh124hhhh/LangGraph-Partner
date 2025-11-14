@@ -1,27 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
-import { loadEnv } from 'vite'
-import fs from 'fs'
-import dotenv from 'dotenv'
 import { fileURLToPath } from 'url'
 
 // 获取当前文件所在目录的绝对路径
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// 加载根目录的.env文件
-try {
-  const rootEnvPath = path.resolve(__dirname, '../../../.env')
-  if (fs.existsSync(rootEnvPath)) {
-    console.log(`📄 加载demo目录环境变量文件: ${rootEnvPath}`)
-    dotenv.config({ path: rootEnvPath })
-  }
-} catch (error) {
-  console.warn('⚠️ 加载根目录.env文件失败:', error)
-}
-
 export default defineConfig({
+  root: __dirname,
+  base: '/',
   plugins: [react()],
   resolve: {
     alias: {
@@ -37,21 +25,23 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3001,
+    historyApiFallback: true,
+    open: true,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
       '/ws': {
         target: 'ws://localhost:8000',
         ws: true,
-        changeOrigin: true,
+        changeOrigin: true
       },
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true
+      }
     },
   },
   build: {
-    outDir: 'dist',
-    sourcemap: true,
+    outDir: path.resolve(__dirname, './dist'),
+    emptyOutDir: true,
   },
 })

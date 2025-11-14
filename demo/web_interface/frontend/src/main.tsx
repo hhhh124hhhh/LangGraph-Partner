@@ -138,12 +138,17 @@ const Root: React.FC = () => {
   );
 };
 
-// 渲染应用
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
-
+const container = document.getElementById('root') as HTMLElement;
+const existingRoot = (window as any).__app_root as ReactDOM.Root | undefined;
+const root = existingRoot || ReactDOM.createRoot(container);
 root.render(<Root />);
+(window as any).__app_root = root;
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    root.unmount();
+  });
+}
 
 // 移除加载指示器
 const loadingElement = document.getElementById('loading');

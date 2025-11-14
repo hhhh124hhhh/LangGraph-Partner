@@ -84,3 +84,4 @@ websocket_test_result.png
 demo/web_interface/frontend/public/websocket-test.html
 .claude/ai-partner-chat/scripts/__pycache__/chunk_schema.cpython-311.pyc
 chat_test_result.png
+demo/web_interface/frontend/test.html

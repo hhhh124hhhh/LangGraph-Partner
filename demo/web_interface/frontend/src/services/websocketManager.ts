@@ -21,6 +21,7 @@ class WebSocketManager {
   private _isConnecting = false;
   private maxRetries = 3;
   private retryCount = 0;
+  private messageQueue: any[] = [];
 
   constructor() {
     this.setupEventHandlers();
@@ -133,6 +134,8 @@ class WebSocketManager {
         ...message,
         payload: { ...message.payload, mode: 'websocket' }
       });
+      // 连接建立后，发送队列中的消息
+      this.processMessageQueue();
     });
 
     enhancedWebSocketService.on('connection_closed', (message) => {
@@ -177,6 +180,8 @@ class WebSocketManager {
         ...message,
         payload: { ...message.payload, mode: 'fallback' }
       });
+      // 连接建立后，发送队列中的消息
+      this.processMessageQueue();
     });
 
     webSocketFallback.on('connection_closed', (message) => {
@@ -233,6 +238,8 @@ class WebSocketManager {
     }
 
     this.currentMode = ConnectionMode.OFFLINE;
+    // 清空消息队列
+    this.messageQueue = [];
 
     this.emit({
       type: 'connection_closed',
@@ -248,14 +255,24 @@ class WebSocketManager {
   // 发送消息
   send(message: any): boolean {
     if (this.currentMode === ConnectionMode.WEBSOCKET) {
-      return enhancedWebSocketService.send(message);
+      // 检查WebSocket是否真的连接成功
+      if (enhancedWebSocketService.isConnected) {
+        return enhancedWebSocketService.send(message);
+      } else {
+        // WebSocket模式但未连接，将消息加入队列
+        logger.warn('[WebSocket Manager] WebSocket模式但未连接，消息已加入队列', 'WebSocket');
+        this.messageQueue.push(message);
+        return true;
+      }
     } else if (this.currentMode === ConnectionMode.FALLBACK) {
       webSocketFallback.send(message);
       return true;
     }
 
-    logger.warn('[WebSocket Manager] 无可用连接，消息发送失败', 'WebSocket');
-    return false;
+    // 无可用连接，将消息加入队列
+    logger.warn('[WebSocket Manager] 无可用连接，消息已加入队列', 'WebSocket');
+    this.messageQueue.push(message);
+    return true;
   }
 
   // 事件监听器管理
@@ -377,6 +394,21 @@ class WebSocketManager {
     }
 
     return ['离线模式'];
+  }
+
+  // 处理消息队列
+  private processMessageQueue(): void {
+    if (this.messageQueue.length === 0) return;
+
+    logger.info(`[WebSocket Manager] 处理消息队列，共 ${this.messageQueue.length} 条消息`, undefined, 'WebSocket');
+    
+    // 逐个发送队列中的消息
+    while (this.messageQueue.length > 0) {
+      const message = this.messageQueue.shift();
+      if (message) {
+        this.send(message);
+      }
+    }
   }
 
   // 清理资源
